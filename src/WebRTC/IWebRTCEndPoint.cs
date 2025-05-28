@@ -44,6 +44,8 @@ public interface IWebRTCEndPoint
 
     event Action? OnPeerConnectionClosed;
 
+    event Action<RTCDataChannel, OpenAIServerEventBase>? OnDataChannelMessageReceived;
+
     void ConnectAudioEndPoint(IAudioEndPoint audioEndPoint);
 
     Task<Either<Error, Unit>> StartConnectAsync(RTCConfiguration? pcConfig = null, string? model = null);
@@ -55,6 +57,4 @@ public interface IWebRTCEndPoint
     Either<Error, Unit> SendSessionUpdate(OpenAIVoicesEnum voice, string? instructions = null, string? model = null);
 
     Either<Error, Unit> SendResponseCreate(OpenAIVoicesEnum voice, string message);
-
-    event Action<RTCDataChannel, OpenAIServerEventBase>? OnDataChannelMessageReceived;
 }
