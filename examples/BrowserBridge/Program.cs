@@ -155,14 +155,10 @@ class Program
         if (browserPc != null && openAiEndPoint?.PeerConnection != null)
         {
             // Send RTP audio payloads receied from the brower WebRTC peer connection to OpenAI.
-            browserPc.OnAudioFrameReceived += (encodeAudioFrame) => openAiEndPoint.SendAudio(
-                RtpTimestampExtensions.ToRtpUnits(encodeAudioFrame.DurationMilliSeconds, openAiEndPoint.PeerConnection.AudioStream.NegotiatedFormat.ToAudioFormat().RtpClockRate),
-                encodeAudioFrame.EncodedAudio);
+            browserPc.PipeAudioTo(openAiEndPoint.PeerConnection);
 
             // Send RTP audio payloads received from OpenAI to the browser WebRTC peer connection.
-            openAiEndPoint.OnAudioFrameReceived += (encodedAudioFrame) => browserPc.SendAudio(
-                RtpTimestampExtensions.ToRtpUnits(encodedAudioFrame.DurationMilliSeconds, browserPc.AudioStream.NegotiatedFormat.ToAudioFormat().RtpClockRate),
-                encodedAudioFrame.EncodedAudio);
+            openAiEndPoint.PeerConnection.PipeAudioTo(browserPc);
 
             // If the browser peer connection closes we need to close the OpenAI peer connection too.
             browserPc.OnClosed += () => openAiEndPoint.PeerConnection?.Close("Browser peer closed.");

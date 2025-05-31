@@ -16,6 +16,7 @@
 //-----------------------------------------------------------------------------
 
 using Microsoft.Extensions.DependencyInjection;
+using SIPSorcery.Net;
 using SIPSorceryMedia.Abstractions;
 using System;
 using System.Net.Http.Headers;
@@ -89,5 +90,21 @@ public static class WebRTCServiceCollectionExtensions
             webRTCEndPoint.OnAudioFrameReceived -= audioEndPoint.GotEncodedMediaFrame;
             await audioEndPoint.Close();
         };
+    }
+
+    /// <summary>
+    /// Pipes encoded audio frames from the <paramref name="source"/> peer connection
+    /// to the <paramref name="destination"/> peer connection by directly forwarding encoded audio 
+    /// payloads. This approach will only work where the peer connecctions are using the same
+    /// audio encoding.
+    /// </summary>
+    /// <param name="source">The RTCPeerConnection to receive audio payloads from.</param>
+    /// <param name="destination">The RTCPeerConnection to send audio payloads to.</param>
+    public static void PipeAudioTo(this RTCPeerConnection source, RTCPeerConnection destination)
+    {
+        // Pipe audio payloads receied from the source WebRTC peer connection to the destination peer connection.
+        source.OnAudioFrameReceived += (encodeAudioFrame) => destination.SendAudio(
+            RtpTimestampExtensions.ToRtpUnits(encodeAudioFrame.DurationMilliSeconds, destination.AudioStream.NegotiatedFormat.ToAudioFormat().RtpClockRate),
+            encodeAudioFrame.EncodedAudio);
     }
 }

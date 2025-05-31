@@ -39,8 +39,6 @@ namespace demo;
 
 class Program
 {
-    private const int AUDIO_PACKET_DURATION = 20; // 20ms of audio per RTP packet for PCMU & PCMA.
-
     private const string ALICE_CALL_LABEL = "Alice";
     private const string BOB_CALL_LABEL = "Bob";
 
@@ -108,21 +106,27 @@ class Program
 
         Log.Information($"Both calls successfully connected.");
 
-        // Send Alice's audio to Bob and vice-versa.
+        // Get the conversation started!
         if (aliceWebrtcEndPoint.PeerConnection != null && bobWebrtcEndPoint.PeerConnection != null)
         {
-            aliceWebrtcEndPoint.PeerConnection.OnRtpPacketReceived += (IPEndPoint rep, SDPMediaTypesEnum media, RTPPacket rtpPkt) =>
-            {
-                bobWebrtcEndPoint.PeerConnection.SendAudio(AUDIO_PACKET_DURATION, rtpPkt.Payload);
-            };
+            // Send RTP audio payloads receied from Alice to Bob.
+            aliceWebrtcEndPoint.PeerConnection.PipeAudioTo(bobWebrtcEndPoint.PeerConnection);
 
-            bobWebrtcEndPoint.PeerConnection.OnRtpPacketReceived += (IPEndPoint rep, SDPMediaTypesEnum media, RTPPacket rtpPkt) =>
-            {
-                aliceWebrtcEndPoint.PeerConnection.SendAudio(AUDIO_PACKET_DURATION, rtpPkt.Payload);
-            };
+            // Send RTP audio payloads receied from Bob to Alice.
+            bobWebrtcEndPoint.PeerConnection.PipeAudioTo(aliceWebrtcEndPoint.PeerConnection);
 
             bobWebrtcEndPoint.DataChannelMessenger.SendSessionUpdate(OpenAIVoicesEnum.ash);
             aliceWebrtcEndPoint.DataChannelMessenger.SendResponseCreate(OpenAIVoicesEnum.shimmer, "Say Hi!");
+        }
+
+        if (_audioScopeForm != null)
+        {
+            _audioScopeForm.FormClosed += (s, e) =>
+            {
+                Log.Logger.Information("Audio scope form closed, exiting application.");
+                aliceWebrtcEndPoint.PeerConnection?.Close("User exit");
+                bobWebrtcEndPoint.PeerConnection?.Close("User exit");
+            };
         }
 
         Console.WriteLine("Wait for ctrl-c to indicate user exit.");

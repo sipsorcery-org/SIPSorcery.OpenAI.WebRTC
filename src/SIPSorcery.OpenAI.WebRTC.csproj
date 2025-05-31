@@ -8,6 +8,7 @@
     <AssemblyVersion>8.6.6</AssemblyVersion>
     <FileVersion>8.6.6</FileVersion>
     <SuppressTfmSupportBuildWarnings>true</SuppressTfmSupportBuildWarnings>
+	<TreatWarningsAsErrors>True</TreatWarningsAsErrors>
   </PropertyGroup>
 
   <ItemGroup>
