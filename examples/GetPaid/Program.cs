@@ -5,7 +5,7 @@
 // together with local function calling to generate payment requests.
 //
 // Usage:
-// set OPENAIKEY=your_openai_key
+// set OPENAI_API_KEY=your_openai_key
 // dotnet run
 //
 // Author(s):
@@ -54,20 +54,21 @@ class Program
 
         Log.Logger.Information("WebRTC OpenAI Demo Program");
 
-        var openAiKey = Environment.GetEnvironmentVariable("OPENAIKEY") ?? string.Empty;
+        var openAiKey = Environment.GetEnvironmentVariable("OPENAI_API_KEY") ?? string.Empty;
 
         if (string.IsNullOrWhiteSpace(openAiKey))
         {
-            Log.Logger.Error("Please provide your OpenAI key as an environment variable. For example: set OPENAIKEY=<your openai api key>");
+            Log.Logger.Error("Please provide your OpenAI key as an environment variable. For example: set OPENAI_API_KEY=<your openai api key>");
             return;
         }
 
         var webrtcEndPoint = new WebRTCEndPoint(openAiKey, logger);
 
         // We'll send/receive audio directly from our Windows audio devices.
-        InitialiseWindowsAudioEndPoint(webrtcEndPoint, Log.Logger);
+        var windowsAudioEP = InitialiseWindowsAudioEndPoint();
+        webrtcEndPoint.ConnectAudioEndPoint(windowsAudioEP);
 
-        var negotiateConnectResult = await webrtcEndPoint.StartConnectAsync();
+        var negotiateConnectResult = await webrtcEndPoint.StartConnect();
 
         if (negotiateConnectResult.IsLeft)
         {
@@ -80,14 +81,14 @@ class Program
             Log.Logger.Information("WebRTC peer connection established.");
 
             // Trigger the conversation by sending a response create message.
-            var result = webrtcEndPoint.SendResponseCreate(OpenAIVoicesEnum.shimmer, "Say Hi!");
+            var result = webrtcEndPoint.DataChannelMessenger.SendResponseCreate(OpenAIVoicesEnum.shimmer, "Say Hi!");
             if (result.IsLeft)
             {
                 Log.Logger.Error($"Failed to send response create message: {result.LeftAsEnumerable().First()}");
             }
         };
 
-        webrtcEndPoint.OnDataChannelMessageReceived += OnDataChannelMessage;
+        webrtcEndPoint.OnDataChannelMessage += OnDataChannelMessage;
 
         Console.WriteLine("Wait for ctrl-c to indicate user exit.");
 
@@ -101,11 +102,10 @@ class Program
         await exitTcs.Task;
     }
 
-    private static void InitialiseWindowsAudioEndPoint(WebRTCEndPoint webrtcEndPoint, Serilog.ILogger logger)
+    private static WindowsAudioEndPoint InitialiseWindowsAudioEndPoint()
     {
         var audioEncoder = new AudioEncoder(AudioCommonlyUsedFormats.OpusWebRTC);
-        WindowsAudioEndPoint windowsAudioEP = new WindowsAudioEndPoint(audioEncoder);
-        webrtcEndPoint.ConnectAudioEndPoint(windowsAudioEP);
+        return new WindowsAudioEndPoint(audioEncoder);
     }
 
     /// <summary>

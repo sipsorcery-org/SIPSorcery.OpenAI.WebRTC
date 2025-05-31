@@ -18,9 +18,6 @@
 
 using System;
 using System.Linq;
-using System.Net;
-using System.Text;
-using System.Text.Json;
 using System.Threading.Tasks;
 using LanguageExt;
 using LanguageExt.Common;
@@ -31,35 +28,28 @@ using SIPSorceryMedia.Abstractions;
 
 namespace SIPSorcery.OpenAI.WebRTC;
 
-public class WebRTCEndPoint : IWebRTCEndPoint
+public class WebRTCEndPoint : IWebRTCEndPoint, IDisposable
 {
     public const string OPENAI_DEFAULT_MODEL = "gpt-4o-realtime-preview-2024-12-17";
     public const string OPENAI_DATACHANNEL_NAME = "oai-events";
-
-    private const uint DEFAULT_OPUS_DURATION_RTP_TIMESTAMP_UNITS = 960; // 48 kHz × 20 ms
 
     private ILogger _logger = NullLogger.Instance;
 
     private readonly IWebRTCRestClient _openAIRealtimeRestClient;
 
-    private RTCPeerConnection? _rtcPeerConnection = null;
-    public RTCPeerConnection? PeerConnection => _rtcPeerConnection;
+    private bool _disposed = false;
+
+    public RTCPeerConnection? PeerConnection { get; private set; }
+
+    public DataChannelMessenger DataChannelMessenger { get; private set; }
 
     /// <summary>
-    /// The RTP timestamp for the previously received RTP packet. Used to calculate the
-    /// duration of the RTP packet in RTP timestamp units.
+    /// Event for receiving an encoded media frame from the remote party. Encoded in this
+    /// case refers to media encoding, e.g. for audio PCMU, OPUS etc. Currently the OpenAI 
+    /// Realtime API only supports audio media frames so the encoded media frames will always
+    /// be OPUS encoded audio frames.
     /// </summary>
-    private uint _rtpPreviousTimestamp = 0;
-
-    /// <summary>
-    /// The RTP timestamp of the previous RTP packet that was provided for forwarding. Used to
-    /// calculate the delta.
-    /// </summary>
-    private uint _rtpPreviousSendTimestamp = 0;
-
-    public event Action<IPEndPoint, SDPMediaTypesEnum, RTPPacket, uint>? OnRtpPacketReceived;
-
-    public event Action<IPEndPoint, uint, uint, uint, int, bool, byte[]>? OnRtpPacketReceivedRaw;
+    public event Action<EncodedAudioFrame>? OnAudioFrameReceived;
 
     public event Action? OnPeerConnectionConnected;
 
@@ -67,7 +57,10 @@ public class WebRTCEndPoint : IWebRTCEndPoint
 
     public event Action? OnPeerConnectionClosed;
 
-    public event Action<RTCDataChannel, OpenAIServerEventBase>? OnDataChannelMessageReceived;
+    /// <summary>
+    /// Raised whenever a parsed OpenAI server event arrives on the data channel.
+    /// </summary>
+    public event Action<RTCDataChannel, OpenAIServerEventBase>? OnDataChannelMessage;
 
     /// <summary>
     /// Preferred constructor for dependency injection.
@@ -76,10 +69,13 @@ public class WebRTCEndPoint : IWebRTCEndPoint
     /// <param name="openAIRealtimeRestClient"></param>
     public WebRTCEndPoint(
         ILogger<WebRTCEndPoint> logger,
+        ILogger<DataChannelMessenger> dataChannelMessengerLogger,
         IWebRTCRestClient openAIRealtimeRestClient)
     {
         _logger = logger;
         _openAIRealtimeRestClient = openAIRealtimeRestClient;
+
+        DataChannelMessenger = new DataChannelMessenger(this, dataChannelMessengerLogger);
     }
 
     /// <summary>
@@ -92,34 +88,27 @@ public class WebRTCEndPoint : IWebRTCEndPoint
         var openAIHttpClientFactory = new HttpClientFactory(openAiKey);
         _openAIRealtimeRestClient = new WebRTCRestClient(openAIHttpClientFactory);
 
-        if(logger != null)
+        if (logger != null)
         {
             _logger = logger;
         }
+
+        DataChannelMessenger = new DataChannelMessenger(this, logger);
     }
 
-    public void ConnectAudioEndPoint(IAudioEndPoint audioEndPoint)
+    public async Task<Either<Error, Unit>> StartConnect(RTCConfiguration? pcConfig = null, string? model = null)
     {
-        audioEndPoint.OnAudioSourceEncodedSample += SendAudio;
-        OnRtpPacketReceivedRaw += audioEndPoint.GotAudioRtp;
-        OnPeerConnectionConnected += async () => await audioEndPoint.Start();
-        OnPeerConnectionFailed += async () => await audioEndPoint.Close();
-        OnPeerConnectionClosed += async () => await audioEndPoint.Close();
-    }
-
-    public async Task<Either<Error, Unit>> StartConnectAsync(RTCConfiguration? pcConfig = null, string? model = null)
-    {
-        if(_rtcPeerConnection != null)
+        if (PeerConnection != null)
         {
             return Unit.Default;
         }
 
-        _rtcPeerConnection = CreatePeerConnection(pcConfig);
+        PeerConnection = CreatePeerConnection(pcConfig);
 
         var useModel = string.IsNullOrWhiteSpace(model) ? OPENAI_DEFAULT_MODEL : model;
 
-        var offer = _rtcPeerConnection.createOffer();
-        await _rtcPeerConnection.setLocalDescription(offer).ConfigureAwait(false);
+        var offer = PeerConnection.createOffer();
+        await PeerConnection.setLocalDescription(offer).ConfigureAwait(false);
 
         var sdpAnswerResult = await _openAIRealtimeRestClient.GetSdpAnswerAsync(offer.sdp, useModel).ConfigureAwait(false);
 
@@ -130,70 +119,42 @@ public class WebRTCEndPoint : IWebRTCEndPoint
                 type = RTCSdpType.answer,
                 sdp  = sdpAnswer
             };
-            _rtcPeerConnection.setRemoteDescription(answer);
+            PeerConnection.setRemoteDescription(answer);
             return Unit.Default;
         });
     }
 
     private RTCPeerConnection CreatePeerConnection(RTCConfiguration? pcConfig)
     {
-        _rtcPeerConnection = new RTCPeerConnection(pcConfig);
+        PeerConnection = new RTCPeerConnection(pcConfig);
 
         MediaStreamTrack audioTrack = new MediaStreamTrack(AudioCommonlyUsedFormats.OpusWebRTC, MediaStreamStatusEnum.SendRecv);
-        _rtcPeerConnection.addTrack(audioTrack);
+        PeerConnection.addTrack(audioTrack);
 
         // This call is synchronous when the WebRTC connection is not yet connected.
-        var dataChannel = _rtcPeerConnection.createDataChannel(OPENAI_DATACHANNEL_NAME).Result;
+        var dataChannel = PeerConnection.createDataChannel(OPENAI_DATACHANNEL_NAME).Result;
 
-        _rtcPeerConnection.onconnectionstatechange += state => _logger.LogDebug($"Peer connection connected changed to {state}.");
-        _rtcPeerConnection.OnTimeout += mediaType => _logger.LogDebug($"Timeout on media {mediaType}.");
-        _rtcPeerConnection.oniceconnectionstatechange += state => _logger.LogDebug($"ICE connection state changed to {state}.");
+        PeerConnection.onconnectionstatechange += state => _logger.LogDebug($"Peer connection connected changed to {state}.");
+        PeerConnection.OnTimeout += mediaType => _logger.LogDebug($"Timeout on media {mediaType}.");
+        PeerConnection.oniceconnectionstatechange += state => _logger.LogDebug($"ICE connection state changed to {state}.");
 
-        _rtcPeerConnection.onsignalingstatechange += () =>
+        PeerConnection.onsignalingstatechange += () =>
         {
-            if (_rtcPeerConnection.signalingState == RTCSignalingState.have_local_offer)
+            if (PeerConnection.signalingState == RTCSignalingState.have_local_offer)
             {
-                _logger.LogDebug($"Local SDP:\n{_rtcPeerConnection.localDescription.sdp}");
+                _logger.LogTrace($"Local SDP:\n{PeerConnection.localDescription.sdp}");
             }
-            else if (_rtcPeerConnection.signalingState is RTCSignalingState.have_remote_offer or RTCSignalingState.stable)
+            else if (PeerConnection.signalingState is RTCSignalingState.have_remote_offer or RTCSignalingState.stable)
             {
-                _logger.LogDebug($"Remote SDP:\n{_rtcPeerConnection.remoteDescription?.sdp}");
+                _logger.LogTrace($"Remote SDP:\n{PeerConnection.remoteDescription?.sdp}");
             }
         };
 
-        _rtcPeerConnection.OnRtpPacketReceived += (ep, mt, rtp) =>
+        PeerConnection.OnAudioFrameReceived += (encodedAudioFrame) => OnAudioFrameReceived?.Invoke(encodedAudioFrame);
+
+        PeerConnection.onconnectionstatechange += (state) =>
         {
-            uint rtpDuration = DEFAULT_OPUS_DURATION_RTP_TIMESTAMP_UNITS;
-
-            if (_rtpPreviousTimestamp != 0)
-            {
-                uint currentTs = rtp.Header.Timestamp;
-
-                if (currentTs >= _rtpPreviousTimestamp)
-                {
-                    rtpDuration = currentTs - _rtpPreviousTimestamp;
-                }
-                else
-                {
-                    // RTP timestampt wraparound: add (2^32) to current before subtracting
-                    // cast to ulong to avoid overflow, then back to uint
-                    uint diff = (uint)((currentTs + ((ulong)uint.MaxValue + 1) - _rtpPreviousTimestamp) & 0xFFFFFFFF);
-                }
-            }
-
-            _rtpPreviousTimestamp = rtp.Header.Timestamp;
-
-            OnRtpPacketReceived?.Invoke(ep, mt, rtp, rtpDuration);
-        };
-
-        _rtcPeerConnection.OnRtpPacketReceived += (ep, mt, rtp) =>
-        {
-            OnRtpPacketReceivedRaw?.Invoke(ep, rtp.Header.SyncSource, rtp.Header.SequenceNumber, rtp.Header.Timestamp, rtp.Header.PayloadType, rtp.Header.MarkerBit == 1, rtp.Payload);
-        };
-
-        _rtcPeerConnection.onconnectionstatechange += (state) =>
-        {
-            if(state is RTCPeerConnectionState.failed)
+            if (state is RTCPeerConnectionState.failed)
             {
                 OnPeerConnectionFailed?.Invoke();
             }
@@ -205,170 +166,76 @@ public class WebRTCEndPoint : IWebRTCEndPoint
         };
 
         dataChannel.onopen += () => OnPeerConnectionConnected?.Invoke();
+        dataChannel.onmessage += DataChannelMessenger.HandleIncomingData;
 
-        dataChannel.onmessage += OnDataChannelMessage;
-
-        dataChannel.onclose += () => OnPeerConnectionClosed?.Invoke();
-
-        return _rtcPeerConnection;
+        return PeerConnection;
     }
 
     public void SendAudio(uint durationRtpUnits, byte[] sample)
     {
-        if (_rtcPeerConnection != null && _rtcPeerConnection.connectionState == RTCPeerConnectionState.connected)
+        if (PeerConnection != null && PeerConnection.connectionState == RTCPeerConnectionState.connected)
         {
-            _rtcPeerConnection.SendAudio(durationRtpUnits, sample);
+            PeerConnection.SendAudio(durationRtpUnits, sample);
         }
     }
 
-    public void SendAudioFromRtpPacket(IPEndPoint remoteEndPoint, SDPMediaTypesEnum mediaType, RTPPacket rtpPacket)
+    public void SendDataChannelMessage(OpenAIServerEventBase message)
     {
-        if (_rtcPeerConnection != null && _rtcPeerConnection.connectionState == RTCPeerConnectionState.connected)
+        var dc = PeerConnection?.DataChannels.FirstOrDefault();
+
+        if (dc == null)
         {
-            uint delta;
-            if (_rtpPreviousSendTimestamp == 0)
-            {
-                delta = DEFAULT_OPUS_DURATION_RTP_TIMESTAMP_UNITS;
-            }
-            else
-            {
-                uint ts = rtpPacket.Header.Timestamp;
-                if (ts >= _rtpPreviousSendTimestamp)
-                {
-                    delta = ts - _rtpPreviousSendTimestamp;
-                }
-                else
-                {
-                    // handle wraparound (32-bit)
-                    delta = (uint)((ts + ((ulong)uint.MaxValue + 1) - _rtpPreviousSendTimestamp) & 0xFFFFFFFF);
-                }
-            }
-
-            _rtcPeerConnection.SendAudio(delta, rtpPacket.Payload);
+            _logger.LogError("No data channel available to send message.");
+            return;
         }
+        else
+        {
+            _logger.LogDebug($"Sending initial response create to first call data channel {dc.label}.");
+            _logger.LogTrace(message.ToJson());
 
-
-        _rtpPreviousSendTimestamp = rtpPacket.Header.Timestamp;
+            dc.send(message.ToJson());
+        }
     }
 
-    public Either<Error, Unit> SendSessionUpdate(OpenAIVoicesEnum voice, string? instructions = null, string? model = null)
+    internal void InvokeOnDataChannelMessage(RTCDataChannel dc, OpenAIServerEventBase message)
+        => OnDataChannelMessage?.Invoke(dc, message);
+
+    /// <summary>
+    /// Closes the PeerConnection and data channel (if open) and raises OnPeerConnectionClosed.
+    /// </summary>
+    public void Close()
     {
-        if (_rtcPeerConnection == null || _rtcPeerConnection.connectionState != RTCPeerConnectionState.connected)
+        if (_disposed)
         {
-            return Error.New("Peer connection not established.");
+            return;
         }
 
-        var responseCreate = new OpenAISessionUpdate
+        if (PeerConnection != null)
         {
-            EventID = Guid.NewGuid().ToString(),
-            Session = new OpenAISession
-            {
-                Voice = voice,
-                Instructions = instructions,
-            }
-        };
+            _logger.LogDebug("Closing PeerConnection.");
 
-        if(!string.IsNullOrWhiteSpace(model))
-        {
-            responseCreate.Session.Model = model;
+            PeerConnection.Close("normal");
+
+            OnPeerConnectionClosed?.Invoke();
+
+            PeerConnection.OnAudioFrameReceived -= OnAudioFrameReceived;
         }
-
-        if (!string.IsNullOrWhiteSpace(instructions))
-        {
-            responseCreate.Session.Instructions = instructions;
-        }
-
-        var dc = _rtcPeerConnection.DataChannels.First();
-
-        _logger.LogDebug($"Sending initial response create to first call data channel {dc.label}.");
-        _logger.LogDebug(responseCreate.ToJson());
-
-        dc.send(responseCreate.ToJson());
-
-        return Unit.Default;
-    }
-
-    public Either<Error, Unit> SendResponseCreate(OpenAIVoicesEnum voice, string instructions)
-    {
-        if(_rtcPeerConnection == null || _rtcPeerConnection.connectionState != RTCPeerConnectionState.connected)
-        {
-            return Error.New("Peer connection not established.");
-        }
-
-        var responseCreate = new OpenAIResponseCreate
-        {
-            EventID = Guid.NewGuid().ToString(),
-            Response = new OpenAIResponseCreateResponse
-            {
-                Instructions = instructions,
-                Voice = voice.ToString()
-            }
-        };
-
-        var dc = _rtcPeerConnection.DataChannels.First();
-
-        _logger.LogDebug($"Sending initial response create to first call data channel {dc.label}.");
-        _logger.LogDebug(responseCreate.ToJson());
-
-        dc.send(responseCreate.ToJson());
-
-        return Unit.Default;
     }
 
     /// <summary>
-    /// Event handler for WebRTC data channel messages.
+    /// Disposes the endpoint, closing any active PeerConnection.
     /// </summary>
-    private void OnDataChannelMessage(RTCDataChannel dc, DataChannelPayloadProtocols protocol, byte[] data)
+    public void Dispose()
     {
-        //logger.LogInformation($"Data channel {dc.label}, protocol {protocol} message length {data.Length}.");
-
-        var message = Encoding.UTF8.GetString(data);
-
-        var serverEventModel = ParseDataChannelMessage(data);
-        serverEventModel.IfSome(e =>
+        if (_disposed)
         {
-            OnDataChannelMessageReceived?.Invoke(dc, e);
-        });
-    }
-
-    private Option<OpenAIServerEventBase> ParseDataChannelMessage(byte[] data)
-    {
-        var message = Encoding.UTF8.GetString(data);
-
-        //logger.LogDebug($"Data channel message: {message}");
-
-        var serverEvent = JsonSerializer.Deserialize<OpenAIServerEventBase>(message, JsonOptions.Default);
-
-        if (serverEvent != null)
-        {
-            //logger.LogInformation($"Server event ID {serverEvent.EventID} and type {serverEvent.Type}.");
-
-            return serverEvent.Type switch
-            {
-                OpenAIConversationItemCreated.TypeName => JsonSerializer.Deserialize<OpenAIConversationItemCreated>(message, JsonOptions.Default),
-                OpenAIInputAudioBufferCommitted.TypeName => JsonSerializer.Deserialize<OpenAIInputAudioBufferCommitted>(message, JsonOptions.Default),
-                OpenAIInputAudioBufferSpeechStarted.TypeName => JsonSerializer.Deserialize<OpenAIInputAudioBufferSpeechStarted>(message, JsonOptions.Default),
-                OpenAIInputAudioBufferSpeechStopped.TypeName => JsonSerializer.Deserialize<OpenAIInputAudioBufferSpeechStopped>(message, JsonOptions.Default),
-                OpenAIOuputAudioBufferAudioStarted.TypeName => JsonSerializer.Deserialize<OpenAIOuputAudioBufferAudioStarted>(message, JsonOptions.Default),
-                OpenAIOuputAudioBufferAudioStopped.TypeName => JsonSerializer.Deserialize<OpenAIOuputAudioBufferAudioStopped>(message, JsonOptions.Default),
-                OpenAIRateLimitsUpdated.TypeName => JsonSerializer.Deserialize<OpenAIRateLimitsUpdated>(message, JsonOptions.Default),
-                OpenAIResponseAudioDone.TypeName => JsonSerializer.Deserialize<OpenAIResponseAudioDone>(message, JsonOptions.Default),
-                OpenAIResponseAudioTranscriptDelta.TypeName => JsonSerializer.Deserialize<OpenAIResponseAudioTranscriptDelta>(message, JsonOptions.Default),
-                OpenAIResponseAudioTranscriptDone.TypeName => JsonSerializer.Deserialize<OpenAIResponseAudioTranscriptDone>(message, JsonOptions.Default),
-                OpenAIResponseContentPartAdded.TypeName => JsonSerializer.Deserialize<OpenAIResponseContentPartAdded>(message, JsonOptions.Default),
-                OpenAIResponseContentPartDone.TypeName => JsonSerializer.Deserialize<OpenAIResponseContentPartDone>(message, JsonOptions.Default),
-                OpenAIResponseCreated.TypeName => JsonSerializer.Deserialize<OpenAIResponseCreated>(message, JsonOptions.Default),
-                OpenAIResponseDone.TypeName => JsonSerializer.Deserialize<OpenAIResponseDone>(message, JsonOptions.Default),
-                OpenAIResponseFunctionCallArgumentsDelta.TypeName => JsonSerializer.Deserialize<OpenAIResponseFunctionCallArgumentsDelta>(message, JsonOptions.Default),
-                OpenAIResponseFunctionCallArgumentsDone.TypeName => JsonSerializer.Deserialize<OpenAIResponseFunctionCallArgumentsDone>(message, JsonOptions.Default),
-                OpenAIResponseOutputItemAdded.TypeName => JsonSerializer.Deserialize<OpenAIResponseOutputItemAdded>(message, JsonOptions.Default),
-                OpenAIResponseOutputItemDone.TypeName => JsonSerializer.Deserialize<OpenAIResponseOutputItemDone>(message, JsonOptions.Default),
-                OpenAISessionCreated.TypeName => JsonSerializer.Deserialize<OpenAISessionCreated>(message, JsonOptions.Default),
-                OpenAISessionUpdated.TypeName => JsonSerializer.Deserialize<OpenAISessionUpdated>(message, JsonOptions.Default),
-                _ => Option<OpenAIServerEventBase>.None
-            };
+            return;
         }
 
-        return Option<OpenAIServerEventBase>.None;
+        _disposed = true;
+
+        Close();
+
+        GC.SuppressFinalize(this);
     }
 }

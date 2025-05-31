@@ -11,7 +11,7 @@
 // based on user request.
 //
 // Usage:
-// set OPENAIKEY=your_openai_key
+// set OPENAI_API_KEY=your_openai_key
 // dotnet run
 //
 // Author(s):
@@ -26,28 +26,23 @@
 // BDS BY-NC-SA restriction, see included LICENSE.md file.
 //-----------------------------------------------------------------------------
 
-using System;
-using System.Net;
-using System.Threading.Tasks;
 using LanguageExt;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Logging.Abstractions;
 using Serilog;
 using Serilog.Extensions.Logging;
 using SIPSorcery.Net;
 using SIPSorcery.OpenAI.WebRTC;
 using SIPSorceryMedia.Abstractions;
+using System;
+using System.Threading.Tasks;
 
 namespace demo;
 
 class Program
 {
-    private static Microsoft.Extensions.Logging.ILogger _logger = NullLogger.Instance;   
-
     static async Task Main(string[] args)
     {
         Log.Logger = new LoggerConfiguration()
@@ -58,15 +53,14 @@ class Program
 
         var factory = new SerilogLoggerFactory(Log.Logger);
         SIPSorcery.LogFactory.Set(factory);
-        _logger = factory.CreateLogger<Program>();
 
         Log.Information("WebRTC OpenAI Browser Bridge Demo Program");
 
-        var openAiKey = Environment.GetEnvironmentVariable("OPENAIKEY") ?? string.Empty;
+        var openAiKey = Environment.GetEnvironmentVariable("OPENAI_API_KEY") ?? string.Empty;
 
         if (string.IsNullOrWhiteSpace(openAiKey))
         {
-            Log.Logger.Error("Please provide your OpenAI key as an environment variable. For example: set OPENAIKEY=<your openai api key>");
+            Log.Logger.Error("Please provide your OpenAI key as an environment variable. For example: set OPENAI_API_KEY=<your openai api key>");
             return;
         }
 
@@ -115,7 +109,7 @@ class Program
                 var browserPeerTask = webSocketPeer.Run();
 
                 SetOpenAIPeerEventHandlers(openAiWebRTCEndPoint);
-                var openAiPeerTask = openAiWebRTCEndPoint.StartConnectAsync(config);
+                var openAiPeerTask = openAiWebRTCEndPoint.StartConnect(config);
 
                 await Task.WhenAll(browserPeerTask, openAiPeerTask);
 
@@ -140,14 +134,14 @@ class Program
             Log.Logger.Information("WebRTC peer connection established.");
 
             // Trigger the conversation by sending a response create message.
-            var result = webrtcEndPoint.SendResponseCreate(OpenAIVoicesEnum.shimmer, "Say Hi!");
+            var result = webrtcEndPoint.DataChannelMessenger.SendResponseCreate(OpenAIVoicesEnum.shimmer, "Say Hi!");
             if (result.IsLeft)
             {
                 Log.Logger.Error($"Failed to send response create message: {result.LeftAsEnumerable().First()}");
             }
         };
 
-        webrtcEndPoint.OnDataChannelMessageReceived += (dc, message) =>
+        webrtcEndPoint.OnDataChannelMessage += (dc, message) =>
         {
             if (message is OpenAIResponseAudioTranscriptDone done)
             {
@@ -160,12 +154,15 @@ class Program
     {
         if (browserPc != null && openAiEndPoint?.PeerConnection != null)
         {
-            // Send RTP audio payloads recied from the brower WebRTC peer connection to OpenAI.
-            browserPc.OnRtpPacketReceived += openAiEndPoint.SendAudioFromRtpPacket;
+            // Send RTP audio payloads receied from the brower WebRTC peer connection to OpenAI.
+            browserPc.OnAudioFrameReceived += (encodeAudioFrame) => openAiEndPoint.SendAudio(
+                RtpTimestampExtensions.ToRtpUnits(encodeAudioFrame.DurationMilliSeconds, openAiEndPoint.PeerConnection.AudioStream.NegotiatedFormat.ToAudioFormat().RtpClockRate),
+                encodeAudioFrame.EncodedAudio);
 
             // Send RTP audio payloads received from OpenAI to the browser WebRTC peer connection.
-            openAiEndPoint.OnRtpPacketReceived += (IPEndPoint rep, SDPMediaTypesEnum media, RTPPacket rtpPkt, uint rtpDuration) =>
-                browserPc.SendAudio(rtpDuration, rtpPkt.Payload);
+            openAiEndPoint.OnAudioFrameReceived += (encodedAudioFrame) => browserPc.SendAudio(
+                RtpTimestampExtensions.ToRtpUnits(encodedAudioFrame.DurationMilliSeconds, browserPc.AudioStream.NegotiatedFormat.ToAudioFormat().RtpClockRate),
+                encodedAudioFrame.EncodedAudio);
 
             // If the browser peer connection closes we need to close the OpenAI peer connection too.
             browserPc.OnClosed += () => openAiEndPoint.PeerConnection?.Close("Browser peer closed.");

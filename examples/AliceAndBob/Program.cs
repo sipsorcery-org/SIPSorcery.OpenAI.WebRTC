@@ -57,11 +57,11 @@ class Program
         var loggerFactory = new SerilogLoggerFactory(Log.Logger);
         SIPSorcery.LogFactory.Set(loggerFactory);
 
-        var openAiKey = Environment.GetEnvironmentVariable("OPENAIKEY") ?? string.Empty;
+        var openAiKey = Environment.GetEnvironmentVariable("OPENAI_API_KEY") ?? string.Empty;
 
         if (string.IsNullOrWhiteSpace(openAiKey))
         {
-            Log.Logger.Error("Please provide your OpenAI key as an environment variable. For example: set OPENAIKEY=<your openai api key>");
+            Log.Logger.Error("Please provide your OpenAI key as an environment variable. For example: set OPENAI_API_KEY=<your openai api key>");
             return;
         }
 
@@ -99,8 +99,8 @@ class Program
             X_UseRtpFeedbackProfile = true,
         };
 
-        var aliceNegotiateTask = aliceWebrtcEndPoint.StartConnectAsync(pcConfig);
-        var bobNegotiateTask = bobWebrtcEndPoint.StartConnectAsync(pcConfig);
+        var aliceNegotiateTask = aliceWebrtcEndPoint.StartConnect(pcConfig);
+        var bobNegotiateTask = bobWebrtcEndPoint.StartConnect(pcConfig);
 
         Log.Information($"Both calls successfully initiated, waiting for them to connect...");
 
@@ -121,8 +121,8 @@ class Program
                 aliceWebrtcEndPoint.PeerConnection.SendAudio(AUDIO_PACKET_DURATION, rtpPkt.Payload);
             };
 
-            bobWebrtcEndPoint.SendSessionUpdate(OpenAIVoicesEnum.ash);
-            aliceWebrtcEndPoint.SendResponseCreate(OpenAIVoicesEnum.shimmer, "Say Hi!");
+            bobWebrtcEndPoint.DataChannelMessenger.SendSessionUpdate(OpenAIVoicesEnum.ash);
+            aliceWebrtcEndPoint.DataChannelMessenger.SendResponseCreate(OpenAIVoicesEnum.shimmer, "Say Hi!");
         }
 
         Console.WriteLine("Wait for ctrl-c to indicate user exit.");
@@ -151,9 +151,9 @@ class Program
         WindowsAudioEndPoint windowsAudioEP = new WindowsAudioEndPoint(audioEncoder, -1, -1, true, false);
         webrtcEndPoint.ConnectAudioEndPoint(windowsAudioEP);
 
-        webrtcEndPoint.OnRtpPacketReceived += (IPEndPoint rep, SDPMediaTypesEnum media, RTPPacket rtpPkt, uint delta) =>
+        webrtcEndPoint.OnAudioFrameReceived += (EncodedAudioFrame encodedAudioFrame) =>
         {
-            var decodedSample = audioEncoder.DecodeAudio(rtpPkt.Payload, AudioCommonlyUsedFormats.OpusWebRTC);
+            var decodedSample = audioEncoder.DecodeAudio(encodedAudioFrame.EncodedAudio, AudioCommonlyUsedFormats.OpusWebRTC);
 
             var samples = decodedSample
                 .Select(s => new Complex(s / 32768f, 0f))

@@ -6,11 +6,11 @@
 //
 // NOTE: As of 10 May 2025 this example does work to establish an audio stream and is
 // able to receive data channel messages. There is no echo cancellation feature in this
-// demo so if not provided by the by your WIndows audio device then ChatGPT will end
+// demo so if not provided by the by your Windows audio device then ChatGPT will end
 // up talking to itself (as a workaround use a headset).
 //
 // Usage:
-// set OPENAIKEY=your_openai_key
+// set OPENAI_API_KEY=your_openai_key
 // dotnet run
 //
 // Author(s):
@@ -30,10 +30,9 @@
 using System;
 using System.Threading.Tasks;
 using Serilog;
-using SIPSorcery.Net;
 using SIPSorceryMedia.Windows;
-using Microsoft.Extensions.DependencyInjection;
 using Serilog.Extensions.Logging;
+using Microsoft.Extensions.Logging;
 using SIPSorcery.OpenAI.WebRTC;
 using SIPSorceryMedia.Abstractions;
 using SIPSorcery.Media;
@@ -45,47 +44,36 @@ class Program
     static async Task Main()
     {
         Log.Logger = new LoggerConfiguration()
-            .MinimumLevel.Debug()
+            .MinimumLevel.Debug() 
+            //.MinimumLevel.Verbose()
             .Enrich.FromLogContext()
             .WriteTo.Console()
             .CreateLogger();
 
-        var factory = new SerilogLoggerFactory(Log.Logger);
-        SIPSorcery.LogFactory.Set(factory);
+        var loggerFactory = new SerilogLoggerFactory(Log.Logger);
+        SIPSorcery.LogFactory.Set(loggerFactory);
 
         Log.Logger.Information("WebRTC OpenAI Demo Program");
 
-        var openAiKey = Environment.GetEnvironmentVariable("OPENAIKEY") ?? string.Empty;
+        var openAiKey = Environment.GetEnvironmentVariable("OPENAI_API_KEY");
 
         if (string.IsNullOrWhiteSpace(openAiKey))
         {
-            Log.Logger.Error("Please provide your OpenAI key as an environment variable. For example: set OPENAIKEY=<your openai api key>");
+            Log.Logger.Error("Please provide your OpenAI key as an environment variable. For example: set OPENAI_API_KEY=<your openai api key>");
             return;
         }
 
-        // Set up DI.
-        var services = new ServiceCollection();
+        var logger = loggerFactory.CreateLogger<Program>();
 
-        services.AddLogging(builder =>
-        {
-            builder.AddSerilog(dispose: true);
-        });
-
-        services.AddOpenAIRealtimeWebRTC(openAiKey);
-
-        using var provider = services.BuildServiceProvider();
-        var webrtcEndPoint = provider.GetRequiredService<IWebRTCEndPoint>();
+        var webrtcEndPoint = new WebRTCEndPoint(openAiKey, logger);
 
         // We'll send/receive audio directly from our Windows audio devices.
-        InitialiseWindowsAudioEndPoint(webrtcEndPoint, Log.Logger);
+        var windowsAudioEp = InitialiseWindowsAudioEndPoint();
+        webrtcEndPoint.ConnectAudioEndPoint(windowsAudioEp);
 
-        var pcConfig = new RTCConfiguration
-        {
-            X_UseRtpFeedbackProfile = true,
-        };
-        var negotiateConnectResult = await webrtcEndPoint.StartConnectAsync(pcConfig);
+        var negotiateConnectResult = await webrtcEndPoint.StartConnect();
 
-        if (negotiateConnectResult.IsLeft)
+        if(negotiateConnectResult.IsLeft)
         {
             Log.Logger.Error($"Failed to negotiation connection to OpenAI Realtime WebRTC endpoint: {negotiateConnectResult.LeftAsEnumerable().First()}");
             return;
@@ -96,14 +84,14 @@ class Program
             Log.Logger.Information("WebRTC peer connection established.");
 
             // Trigger the conversation by sending a response create message.
-            var result = webrtcEndPoint.SendResponseCreate(OpenAIVoicesEnum.shimmer, "Say Hi!");
+            var result = webrtcEndPoint.DataChannelMessenger.SendResponseCreate(OpenAIVoicesEnum.shimmer, "Say Hi!");
             if (result.IsLeft)
             {
                 Log.Logger.Error($"Failed to send response create message: {result.LeftAsEnumerable().First()}");
             }
         };
 
-        webrtcEndPoint.OnDataChannelMessageReceived += (dc, message) =>
+        webrtcEndPoint.OnDataChannelMessage += (dc, message) =>
         {
             if (message is OpenAIResponseAudioTranscriptDone done)
             {
@@ -123,10 +111,9 @@ class Program
         await exitTcs.Task;
     }
 
-    private static void InitialiseWindowsAudioEndPoint(IWebRTCEndPoint webrtcEndPoint, ILogger logger)
+    private static WindowsAudioEndPoint InitialiseWindowsAudioEndPoint()
     {
         var audioEncoder = new AudioEncoder(AudioCommonlyUsedFormats.OpusWebRTC);
-        WindowsAudioEndPoint windowsAudioEP = new WindowsAudioEndPoint(audioEncoder);
-        webrtcEndPoint.ConnectAudioEndPoint(windowsAudioEP);
+        return new WindowsAudioEndPoint(audioEncoder);
     }
 }

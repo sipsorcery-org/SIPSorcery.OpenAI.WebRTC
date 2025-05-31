@@ -18,10 +18,10 @@
     <PackageReference Include="Serilog.Extensions.Logging" Version="3.0.1" />
     <PackageReference Include="Serilog.Sinks.Console" Version="3.1.1" />
     <PackageReference Include="SharpGL.WinForms" Version="3.1.1" />
+	<PackageReference Include="SIPSorceryMedia.Windows" Version="8.0.13-pre" />
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\..\SIPSorceryMedia.Windows\src\SIPSorceryMedia.Windows.csproj" />
     <ProjectReference Include="..\..\..\sipsorcery\src\SIPSorcery.csproj" />
     <ProjectReference Include="..\..\src\SIPSorcery.OpenAI.WebRTC.csproj" />
   </ItemGroup>

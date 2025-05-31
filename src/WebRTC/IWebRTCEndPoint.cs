@@ -15,7 +15,6 @@
 //-----------------------------------------------------------------------------
 
 using System;
-using System.Net;
 using System.Threading.Tasks;
 using LanguageExt;
 using LanguageExt.Common;
@@ -28,15 +27,7 @@ public interface IWebRTCEndPoint
 {
     RTCPeerConnection? PeerConnection { get; }
 
-    /// <summary>
-    /// (IPEndPoint remoteEndPoint, SDPMediaTypesEnum mediaType (audio|video|text), RTPPacket rtpPacket, uint durationRtpUnits)
-    /// </summary>
-    event Action<IPEndPoint, SDPMediaTypesEnum, RTPPacket, uint>? OnRtpPacketReceived;
-
-    /// <summary>
-    /// (IPEndPoint remoteEndPoint, uint ssrc, uint seqnum, uint timestamp, int payloadID, bool marker, byte[] payload)
-    /// </summary>
-    event Action<IPEndPoint, uint, uint, uint, int, bool, byte[]>? OnRtpPacketReceivedRaw;
+    public DataChannelMessenger DataChannelMessenger { get; }
 
     event Action? OnPeerConnectionConnected;
 
@@ -44,17 +35,15 @@ public interface IWebRTCEndPoint
 
     event Action? OnPeerConnectionClosed;
 
-    event Action<RTCDataChannel, OpenAIServerEventBase>? OnDataChannelMessageReceived;
+    event Action<EncodedAudioFrame>? OnAudioFrameReceived;
 
-    void ConnectAudioEndPoint(IAudioEndPoint audioEndPoint);
+    event Action<RTCDataChannel, OpenAIServerEventBase>? OnDataChannelMessage;
 
-    Task<Either<Error, Unit>> StartConnectAsync(RTCConfiguration? pcConfig = null, string? model = null);
+    Task<Either<Error, Unit>> StartConnect(RTCConfiguration? pcConfig = null, string? model = null);
 
-    void SendAudio(uint durationRtpUnits, byte[] sample);
+    void SendAudio(uint durationMilliseconds, byte[] encodedAudio);
 
-    void SendAudioFromRtpPacket(IPEndPoint remoteEndPoint, SDPMediaTypesEnum mediaType, RTPPacket rtpPacket);
+    void SendDataChannelMessage(OpenAIServerEventBase message);
 
-    Either<Error, Unit> SendSessionUpdate(OpenAIVoicesEnum voice, string? instructions = null, string? model = null);
-
-    Either<Error, Unit> SendResponseCreate(OpenAIVoicesEnum voice, string message);
+    void Close();
 }

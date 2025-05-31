@@ -1,4 +1,4 @@
-# WebRTC OpenAI Bridge Demo
+# WebRTC OpenAI Browser Bridge Demo
 
 ## Overview
 
@@ -24,14 +24,14 @@ Set the following environment variables before running the application:
 
 | Variable                                     | Description                                                                                      |
 |----------------------------------------------|--------------------------------------------------------------------------------------------------|
-| `OPENAIKEY`                                  | **Required.** Your OpenAI API key for generating ephemeral session secrets.                      |
+| `OPENAI_API_KEY`                             | **Required.** Your OpenAI API key for generating ephemeral session secrets.                      |
 | `STUN_URL`                                   | **Optional.** A STUN server URL (e.g., `stun:stun.l.google.com:19302`) to help establish ICE.    |
 | `WAIT_FOR_ICE_GATHERING_TO_SEND_OFFER`       | **Optional.** `true` or `false`. If `true`, the server will wait for ICE gathering to complete before sending the SDP offer to the client. Default: `false`.
 
 Example (Windows PowerShell):
 
 ```powershell
-$Env:OPENAIKEY = "sk-..."
+$Env:OPENAI_API_KEY = "sk-..."
 $Env:STUN_URL = "stun:stun.l.google.com:19302"
 $Env:WAIT_FOR_ICE_GATHERING_TO_SEND_OFFER = "true"
 ```
@@ -48,7 +48,7 @@ cd demo-webrtc-openai
 2. Build and run the application:
 
 ```bash
-export OPENAIKEY="<your_openai_key>"
+export OPENAI_API_KEY="<your_openai_key>"
 export STUN_URL="stun:stun.l.google.com:19302"
 dotnet run
 ```
@@ -88,12 +88,12 @@ dotnet run
 
 ## Troubleshooting
 
-- **Missing API key**: Ensure `OPENAIKEY` is set; the server will fail to start otherwise.
+- **Missing API key**: Ensure `OPENAI_API_KEY` is set; the server will fail to start otherwise.
 - **ICE failures**: Provide a reliable STUN/TURN server via `STUN_URL`.
 - **Health and logging**: This demo uses Serilog for console logging; adjust log levels in `Program.cs` as needed.
 
 ## References
 
 - OpenAI Real-Time WebRTC Guide: https://platform.openai.com/docs/guides/realtime-webrtc
-- SIPSorcery .NET WebRTC: https://github.com/sipsorcery/sipsorcery
+- SIPSorcery .NET OpenAI WebRTC: https://github.com/sipsorcery-org/SIPSorcery.OpenAI.WebRTC
 
