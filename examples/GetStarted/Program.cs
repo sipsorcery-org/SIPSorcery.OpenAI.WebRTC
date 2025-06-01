@@ -83,6 +83,13 @@ class Program
         {
             Log.Logger.Information("WebRTC peer connection established.");
 
+            // Optionally send a session update message to adjust the session parameters.
+            var sessionUpdateResult = webrtcEndPoint.DataChannelMessenger.SendSessionUpdate(OpenAIVoicesEnum.coral, true, "Keep it short.");
+            if (sessionUpdateResult.IsLeft)
+            {
+                Log.Logger.Error($"Failed to send rsession update message: {sessionUpdateResult.LeftAsEnumerable().First()}");
+            }
+
             // Trigger the conversation by sending a response create message.
             var result = webrtcEndPoint.DataChannelMessenger.SendResponseCreate(OpenAIVoicesEnum.shimmer, "Say Hi!");
             if (result.IsLeft)
@@ -93,9 +100,19 @@ class Program
 
         webrtcEndPoint.OnDataChannelMessage += (dc, message) =>
         {
-            if (message is OpenAIResponseAudioTranscriptDone done)
+            var log = message switch
             {
-                Log.Information($"Transcript done: {done.Transcript}");
+                OpenAISessionUpdated sessionUpdated => $"Session updated: {sessionUpdated.ToJson()}",
+                OpenAIConversationItemIInputAudioTranscriptionDelta inputDelta => $"ME ⌛: {inputDelta.Delta?.Trim()}",
+                OpenAIConversationItemIInputAudioTranscriptionCompleted inputTranscript => $"ME ✅: {inputTranscript.Transcript?.Trim()}",
+                OpenAIResponseAudioTranscriptDelta responseDelta => $"AI ⌛: {responseDelta.Delta?.Trim()}",
+                OpenAIResponseAudioTranscriptDone responseTranscript => $"AI ✅: {responseTranscript.Transcript?.Trim()}",
+                _ => string.Empty //$"Received {message.GetType().Name}"
+            };
+
+            if (log != string.Empty)
+            {
+                Log.Information(log);
             }
         };
 
@@ -114,6 +131,7 @@ class Program
     private static WindowsAudioEndPoint InitialiseWindowsAudioEndPoint()
     {
         var audioEncoder = new AudioEncoder(AudioCommonlyUsedFormats.OpusWebRTC);
+        //var audioEncoder = new AudioEncoder();
         return new WindowsAudioEndPoint(audioEncoder);
     }
 }

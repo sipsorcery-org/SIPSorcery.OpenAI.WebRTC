@@ -131,6 +131,9 @@ public class WebRTCEndPoint : IWebRTCEndPoint, IDisposable
         var pc = new RTCPeerConnection(pcConfig);
 
         MediaStreamTrack audioTrack = new MediaStreamTrack(AudioCommonlyUsedFormats.OpusWebRTC, MediaStreamStatusEnum.SendRecv);
+        // Note: 1 Jun 2025 AC - I hsvr not been able to get PCMU or PCMA to work reliably with OpenAI.
+        //MediaStreamTrack audioTrack = new MediaStreamTrack(new AudioFormat(SDPWellKnownMediaFormatsEnum.PCMU), MediaStreamStatusEnum.SendRecv);
+        //MediaStreamTrack audioTrack = new MediaStreamTrack(new AudioFormat(SDPWellKnownMediaFormatsEnum.PCMA), MediaStreamStatusEnum.SendRecv);
         pc.addTrack(audioTrack);
 
         // This call is synchronous when the WebRTC connection is not yet connected.
