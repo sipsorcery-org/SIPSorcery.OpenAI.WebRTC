@@ -3,8 +3,6 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.12.35527.113
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SIPSorcery", "..\..\sipsorcery\src\SIPSorcery.csproj", "{76FF505E-253C-B75A-7385-7F313F829284}"
-EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SIPSorcery.OpenAI.WebRTC", "..\src\SIPSorcery.OpenAI.WebRTC.csproj", "{40B346CD-AB41-932E-222B-C6D319F669D1}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GetStarted", "GetStarted\GetStarted.csproj", "{D669428C-D3CC-92DA-15BE-DB6D38A4FCB1}"
@@ -25,10 +23,6 @@ Global
 		Release|Any CPU = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{76FF505E-253C-B75A-7385-7F313F829284}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{76FF505E-253C-B75A-7385-7F313F829284}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{76FF505E-253C-B75A-7385-7F313F829284}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{76FF505E-253C-B75A-7385-7F313F829284}.Release|Any CPU.Build.0 = Release|Any CPU
 		{40B346CD-AB41-932E-222B-C6D319F669D1}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{40B346CD-AB41-932E-222B-C6D319F669D1}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{40B346CD-AB41-932E-222B-C6D319F669D1}.Release|Any CPU.ActiveCfg = Release|Any CPU

@@ -15,11 +15,7 @@
     <PackageReference Include="LanguageExt.Core" Version="4.4.9" />
     <PackageReference Include="Microsoft.Extensions.Logging" Version="9.0.0" />
     <PackageReference Include="Microsoft.Extensions.Http" Version="9.0.0" />
-    <!--<PackageReference Include="SIPSorcery" Version="8.0.15-pre" />-->
-  </ItemGroup>
-
-  <ItemGroup>
-    <ProjectReference Include="..\..\sipsorcery\src\SIPSorcery.csproj" />
+    <PackageReference Include="SIPSorcery" Version="8.0.20-pre" />
   </ItemGroup>
 
 </Project>
