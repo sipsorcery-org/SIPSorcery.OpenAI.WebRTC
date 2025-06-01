@@ -59,7 +59,7 @@ public class WebRTCRestClient : IWebRTCRestClient
 
         using var req = new HttpRequestMessage(HttpMethod.Post, "/v1/realtime/sessions");
         req.Content = new StringContent(
-            JsonSerializer.Serialize(new { model, voice }, JsonOptions.Default),
+            JsonSerializer.Serialize(new { model, voice }),
             Encoding.UTF8,
             "application/json");
 

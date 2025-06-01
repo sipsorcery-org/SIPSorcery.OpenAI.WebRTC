@@ -27,15 +27,16 @@
 // BDS BY-NC-SA restriction, see included LICENSE.md file.
 //-----------------------------------------------------------------------------
 
-using System;
-using System.Threading.Tasks;
-using Serilog;
-using SIPSorceryMedia.Windows;
-using Serilog.Extensions.Logging;
 using Microsoft.Extensions.Logging;
+using OpenAI.Realtime;
+using Serilog;
+using Serilog.Extensions.Logging;
+using SIPSorcery.Media;
 using SIPSorcery.OpenAI.WebRTC;
 using SIPSorceryMedia.Abstractions;
-using SIPSorcery.Media;
+using SIPSorceryMedia.Windows;
+using System;
+using System.Threading.Tasks;
 
 namespace demo;
 
@@ -102,18 +103,16 @@ class Program
         {
             var log = message switch
             {
-                OpenAISessionUpdated sessionUpdated => $"Session updated: {sessionUpdated.ToJson()}",
-                OpenAIConversationItemIInputAudioTranscriptionDelta inputDelta => $"ME ⌛: {inputDelta.Delta?.Trim()}",
-                OpenAIConversationItemIInputAudioTranscriptionCompleted inputTranscript => $"ME ✅: {inputTranscript.Transcript?.Trim()}",
-                OpenAIResponseAudioTranscriptDelta responseDelta => $"AI ⌛: {responseDelta.Delta?.Trim()}",
-                OpenAIResponseAudioTranscriptDone responseTranscript => $"AI ✅: {responseTranscript.Transcript?.Trim()}",
-                _ => string.Empty //$"Received {message.GetType().Name}"
+                ResponseAudioTranscriptResponse { IsDelta: true } aiDelta => $"AI ⌛: {aiDelta.Delta}",
+                ResponseAudioTranscriptResponse { IsDone: true } aiDone => $"AI ✅: {aiDone.Transcript}",
+                ConversationItemInputAudioTranscriptionResponse { IsCompleted: false } meDelta => $"ME ⌛: {meDelta.Transcript.Trim()}",
+                ConversationItemInputAudioTranscriptionResponse { IsCompleted: true } meDelta => $"ME ✅: {meDelta.Transcript.Trim()}",
+                //OpenAISessionUpdated sessionUpdated => $"Session updated: {sessionUpdated.ToJson()}",
+                var m when m != null => $"Received {m.Type}.",
+                _ => $"Unrecognised data channel message received."
             };
 
-            if (log != string.Empty)
-            {
-                Log.Information(log);
-            }
+            Log.Information(log);
         };
 
         Console.WriteLine("Wait for ctrl-c to indicate user exit.");

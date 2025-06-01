@@ -19,11 +19,14 @@ using LanguageExt;
 using LanguageExt.Common;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
+using OpenAI;
+using OpenAI.Realtime;
 using SIPSorcery.Net;
 using System;
 using System.Linq;
 using System.Text;
 using System.Text.Json;
+using OpenAIDotNet = global::OpenAI;
 
 namespace SIPSorcery.OpenAI.WebRTC;
 
@@ -55,7 +58,7 @@ public class DataChannelMessenger
     /// <summary>
     /// Sends an OpenAI session‐update event over the data channel.
     /// </summary>
-    public Either<Error, Unit> SendSessionUpdate(
+    public Either<LanguageExt.Common.Error, Unit> SendSessionUpdate(
         OpenAIVoicesEnum voice,
         bool useInputAudioTranscription = false,
         string? instructions = null,
@@ -70,39 +73,35 @@ public class DataChannelMessenger
 
         var dc = dcResult.RightToList().First();
 
-        var message = new OpenAISessionUpdate
-        {
-            EventID = Guid.NewGuid().ToString(),
-            Session = new OpenAISession
-            {
-                Voice = voice,
-                Instructions = instructions
-            }
-        };
+        var message = new OpenAIDotNet.Realtime.UpdateSessionRequest(
+            new OpenAIDotNet.Realtime.SessionConfiguration(
+                OpenAIDotNet.Models.Model.GPT4oRealtime, 
+                voice: Voice.Coral, 
+                transcriptionModel: useInputAudioTranscription ? OpenAIDotNet.Models.Model.Whisper1 : null));
 
-        if(useInputAudioTranscription)
-        {
-            message.Session.InputAudioTranscription = new OpenAIInputAudioTranscriptionSettings();
-        }
+        //if(useInputAudioTranscription)
+        //{
+        //    message.Session.InputAudioTranscription = new OpenAIInputAudioTranscriptionSettings();
+        //}
 
-        if (!string.IsNullOrWhiteSpace(model))
-        {
-            message.Session.Model = model;
-        }
+        //if (!string.IsNullOrWhiteSpace(model))
+        //{
+        //    message.Session.Model = model;
+        //}
 
-        _logger.LogTrace(
+        _logger.LogDebug(
             "Sending session‐update message on data channel “{Label}”: {Json}",
             dc.label,
-            message.ToJson());
+            JsonSerializer.Serialize(message, OpenAIDotNet.OpenAIClient.JsonSerializationOptions));
 
-        dc.send(message.ToJson());
+        dc.send(JsonSerializer.Serialize(message, OpenAIDotNet.OpenAIClient.JsonSerializationOptions));
         return Unit.Default;
     }
 
     /// <summary>
     /// Sends an OpenAI response‐create event over the data channel.
     /// </summary>
-    public Either<Error, Unit> SendResponseCreate(
+    public Either<LanguageExt.Common.Error, Unit> SendResponseCreate(
         OpenAIVoicesEnum voice,
         string instructions)
     {
@@ -115,28 +114,29 @@ public class DataChannelMessenger
 
         var dc = dcResult.RightToList().First();
 
-        var message = new OpenAIResponseCreate
-        {
-            EventID = Guid.NewGuid().ToString(),
-            Response = new OpenAIResponseCreateResponse
-            {
-                Voice = voice.ToString(),
-                Instructions = instructions
-            }
-        };
+        var message = new OpenAIDotNet.Realtime.ConversationItemCreateRequest(
+            new ConversationItem(new OpenAIDotNet.Realtime.RealtimeContent(instructions, RealtimeContentType.Text)));
+        //{
+        //    EventID = Guid.NewGuid().ToString(),
+        //    Response = new OpenAIResponseCreateResponse
+        //    {
+        //        Voice = voice.ToString(),
+        //        Instructions = instructions
+        //    }
+        //};
 
         _logger.LogTrace(
             "Sending response‐create message on data channel “{Label}”: {Json}",
             dc.label,
-            message.ToJson());
+            JsonSerializer.Serialize(message, OpenAIDotNet.OpenAIClient.JsonSerializationOptions));
 
-        dc.send(message.ToJson());
+        dc.send(JsonSerializer.Serialize(message, OpenAIDotNet.OpenAIClient.JsonSerializationOptions));
         return Unit.Default;
     }
 
     /// <summary>
     /// Handles any incoming raw data from the WebRTC data channel. Parses the JSON,
-    /// turns it into the appropriate <see cref="OpenAIServerEventBase"/> subtype, and
+    /// turns it into the appropriate subtype, and
     /// then invokes the endpoint's <see cref="IWebRTCEndPoint.OnDataChannelMessage"/> event.
     /// </summary>
     public void HandleIncomingData(RTCDataChannel dc, DataChannelPayloadProtocols protocol, byte[] data)
@@ -144,50 +144,61 @@ public class DataChannelMessenger
         string msgText = Encoding.UTF8.GetString(data);
 
         // Attempt a base‐type JSON deserialize
-        var baseEvent = JsonSerializer.Deserialize<OpenAIServerEventBase>(msgText, JsonOptions.Default);
-        if (baseEvent == null)
-        {
-            _logger.LogWarning("Received non‐OpenAI event on data channel: {Payload}", msgText);
-            return;
-        }
+        //var baseEvent = JsonSerializer.Deserialize<OpenAIServerEventBase>(msgText, JsonOptions.Default);
+        //if (baseEvent == null)
+        //{
+        //    _logger.LogWarning("Received non‐OpenAI event on data channel: {Payload}", msgText);
+        //    return;
+        //}
 
         // Dispatch into the concrete subtype based on 'Type' field:
-        OpenAIServerEventBase? parsedEvent = baseEvent.Type switch
-        {
-            OpenAIConversationItemCreated.TypeName => JsonSerializer.Deserialize<OpenAIConversationItemCreated>(msgText, JsonOptions.Default),
-            OpenAIConversationItemIInputAudioTranscriptionCompleted.TypeName => JsonSerializer.Deserialize<OpenAIConversationItemIInputAudioTranscriptionCompleted>(msgText, JsonOptions.Default),
-            OpenAIConversationItemIInputAudioTranscriptionDelta.TypeName => JsonSerializer.Deserialize<OpenAIConversationItemIInputAudioTranscriptionDelta>(msgText, JsonOptions.Default),
-            OpenAIInputAudioBufferCommitted.TypeName => JsonSerializer.Deserialize<OpenAIInputAudioBufferCommitted>(msgText, JsonOptions.Default),
-            OpenAIInputAudioBufferSpeechStarted.TypeName => JsonSerializer.Deserialize<OpenAIInputAudioBufferSpeechStarted>(msgText, JsonOptions.Default),
-            OpenAIInputAudioBufferSpeechStopped.TypeName => JsonSerializer.Deserialize<OpenAIInputAudioBufferSpeechStopped>(msgText, JsonOptions.Default),
-            OpenAIOuputAudioBufferAudioStarted.TypeName => JsonSerializer.Deserialize<OpenAIOuputAudioBufferAudioStarted>(msgText, JsonOptions.Default),
-            OpenAIOuputAudioBufferAudioStopped.TypeName => JsonSerializer.Deserialize<OpenAIOuputAudioBufferAudioStopped>(msgText, JsonOptions.Default),
-            OpenAIOutputAudioBufferStarted.TypeName => JsonSerializer.Deserialize<OpenAIOutputAudioBufferStarted>(msgText, JsonOptions.Default),
-            OpenAIOutputAudioBufferStopped.TypeName => JsonSerializer.Deserialize<OpenAIOutputAudioBufferStopped>(msgText, JsonOptions.Default),
-            OpenAIRateLimitsUpdated.TypeName => JsonSerializer.Deserialize<OpenAIRateLimitsUpdated>(msgText, JsonOptions.Default),
-            OpenAIResponseAudioDone.TypeName => JsonSerializer.Deserialize<OpenAIResponseAudioDone>(msgText, JsonOptions.Default),
-            OpenAIResponseAudioTranscriptDelta.TypeName => JsonSerializer.Deserialize<OpenAIResponseAudioTranscriptDelta>(msgText, JsonOptions.Default),
-            OpenAIResponseAudioTranscriptDone.TypeName => JsonSerializer.Deserialize<OpenAIResponseAudioTranscriptDone>(msgText, JsonOptions.Default),
-            OpenAIResponseContentPartAdded.TypeName => JsonSerializer.Deserialize<OpenAIResponseContentPartAdded>(msgText, JsonOptions.Default),
-            OpenAIResponseContentPartDone.TypeName => JsonSerializer.Deserialize<OpenAIResponseContentPartDone>(msgText, JsonOptions.Default),
-            OpenAIResponseCreated.TypeName => JsonSerializer.Deserialize<OpenAIResponseCreated>(msgText, JsonOptions.Default),
-            OpenAIResponseDone.TypeName => JsonSerializer.Deserialize<OpenAIResponseDone>(msgText, JsonOptions.Default),
-            OpenAIResponseFunctionCallArgumentsDelta.TypeName => JsonSerializer.Deserialize<OpenAIResponseFunctionCallArgumentsDelta>(msgText, JsonOptions.Default),
-            OpenAIResponseFunctionCallArgumentsDone.TypeName => JsonSerializer.Deserialize<OpenAIResponseFunctionCallArgumentsDone>(msgText, JsonOptions.Default),
-            OpenAIResponseOutputItemAdded.TypeName => JsonSerializer.Deserialize<OpenAIResponseOutputItemAdded>(msgText, JsonOptions.Default),
-            OpenAIResponseOutputItemDone.TypeName => JsonSerializer.Deserialize<OpenAIResponseOutputItemDone>(msgText, JsonOptions.Default),
-            OpenAISessionCreated.TypeName => JsonSerializer.Deserialize<OpenAISessionCreated>(msgText, JsonOptions.Default),
-            OpenAISessionUpdated.TypeName => JsonSerializer.Deserialize<OpenAISessionUpdated>(msgText, JsonOptions.Default),
-            _ => null
-        };
+        //OpenAIServerEventBase? parsedEvent = baseEvent.Type switch
+        //{
+        //    OpenAIConversationItemCreated.TypeName => JsonSerializer.Deserialize<OpenAIConversationItemCreated>(msgText, JsonOptions.Default),
+        //    OpenAIConversationItemIInputAudioTranscriptionCompleted.TypeName => JsonSerializer.Deserialize<OpenAIConversationItemIInputAudioTranscriptionCompleted>(msgText, JsonOptions.Default),
+        //    OpenAIConversationItemIInputAudioTranscriptionDelta.TypeName => JsonSerializer.Deserialize<OpenAIConversationItemIInputAudioTranscriptionDelta>(msgText, JsonOptions.Default),
+        //    OpenAIInputAudioBufferCommitted.TypeName => JsonSerializer.Deserialize<OpenAIInputAudioBufferCommitted>(msgText, JsonOptions.Default),
+        //    OpenAIInputAudioBufferSpeechStarted.TypeName => JsonSerializer.Deserialize<OpenAIInputAudioBufferSpeechStarted>(msgText, JsonOptions.Default),
+        //    OpenAIInputAudioBufferSpeechStopped.TypeName => JsonSerializer.Deserialize<OpenAIInputAudioBufferSpeechStopped>(msgText, JsonOptions.Default),
+        //    OpenAIOuputAudioBufferAudioStarted.TypeName => JsonSerializer.Deserialize<OpenAIOuputAudioBufferAudioStarted>(msgText, JsonOptions.Default),
+        //    OpenAIOuputAudioBufferAudioStopped.TypeName => JsonSerializer.Deserialize<OpenAIOuputAudioBufferAudioStopped>(msgText, JsonOptions.Default),
+        //    OpenAIOutputAudioBufferStarted.TypeName => JsonSerializer.Deserialize<OpenAIOutputAudioBufferStarted>(msgText, JsonOptions.Default),
+        //    OpenAIOutputAudioBufferStopped.TypeName => JsonSerializer.Deserialize<OpenAIOutputAudioBufferStopped>(msgText, JsonOptions.Default),
+        //    OpenAIRateLimitsUpdated.TypeName => JsonSerializer.Deserialize<OpenAIRateLimitsUpdated>(msgText, JsonOptions.Default),
+        //    OpenAIResponseAudioDone.TypeName => JsonSerializer.Deserialize<OpenAIResponseAudioDone>(msgText, JsonOptions.Default),
+        //    OpenAIResponseAudioTranscriptDelta.TypeName => JsonSerializer.Deserialize<OpenAIResponseAudioTranscriptDelta>(msgText, JsonOptions.Default),
+        //    OpenAIResponseAudioTranscriptDone.TypeName => JsonSerializer.Deserialize<OpenAIResponseAudioTranscriptDone>(msgText, JsonOptions.Default),
+        //    OpenAIResponseContentPartAdded.TypeName => JsonSerializer.Deserialize<OpenAIResponseContentPartAdded>(msgText, JsonOptions.Default),
+        //    OpenAIResponseContentPartDone.TypeName => JsonSerializer.Deserialize<OpenAIResponseContentPartDone>(msgText, JsonOptions.Default),
+        //    OpenAIResponseCreated.TypeName => JsonSerializer.Deserialize<OpenAIResponseCreated>(msgText, JsonOptions.Default),
+        //    OpenAIResponseDone.TypeName => JsonSerializer.Deserialize<OpenAIResponseDone>(msgText, JsonOptions.Default),
+        //    OpenAIResponseFunctionCallArgumentsDelta.TypeName => JsonSerializer.Deserialize<OpenAIResponseFunctionCallArgumentsDelta>(msgText, JsonOptions.Default),
+        //    OpenAIResponseFunctionCallArgumentsDone.TypeName => JsonSerializer.Deserialize<OpenAIResponseFunctionCallArgumentsDone>(msgText, JsonOptions.Default),
+        //    OpenAIResponseOutputItemAdded.TypeName => JsonSerializer.Deserialize<OpenAIResponseOutputItemAdded>(msgText, JsonOptions.Default),
+        //    OpenAIResponseOutputItemDone.TypeName => JsonSerializer.Deserialize<OpenAIResponseOutputItemDone>(msgText, JsonOptions.Default),
+        //    OpenAISessionCreated.TypeName => JsonSerializer.Deserialize<OpenAISessionCreated>(msgText, JsonOptions.Default),
+        //    OpenAISessionUpdated.TypeName => JsonSerializer.Deserialize<OpenAISessionUpdated>(msgText, JsonOptions.Default),
+        //    _ => null
+        //};
 
-        if (parsedEvent != null)
+        //_logger.LogDebug(msgText);
+
+        try
         {
-            _endpoint.InvokeOnDataChannelMessage(dc, parsedEvent);
+            var parsedEvent = JsonSerializer.Deserialize<IServerEvent>(msgText, OpenAIClient.JsonSerializationOptions);
+
+            if (parsedEvent != null)
+            {
+                _endpoint.InvokeOnDataChannelMessage(dc, parsedEvent);
+            }
+            else
+            {
+                _logger.LogWarning("Unexpected event type '{Type}' received on OpenAI data channel.", parsedEvent?.Type);
+            }
         }
-        else
+        catch(Exception)
         {
-            _logger.LogWarning("Unexpected event type '{Type}' received on OpenAI data channel.", baseEvent.Type);
+            _logger.LogWarning($"JSON parse error on OpenAI data channel for {msgText}");
         }
     }
 
@@ -195,26 +206,26 @@ public class DataChannelMessenger
     /// Validates that the PeerConnection is non-null and connected, and that at least one data channel exists.
     /// Returns Either an Error describing the failure, or the first RTCDataChannel.
     /// </summary>
-    private Either<Error, RTCDataChannel> ValidateDataChannel()
+    private Either<LanguageExt.Common.Error, RTCDataChannel> ValidateDataChannel()
     {
-        return _endpoint.PeerConnection.Match<Either<Error, RTCDataChannel>>(
+        return _endpoint.PeerConnection.Match<Either<LanguageExt.Common.Error, RTCDataChannel>>(
                pc =>
                {
                    if (pc.connectionState != RTCPeerConnectionState.connected)
                    {
-                       return Error.New("Peer connection not connected.");
+                       return LanguageExt.Common.Error.New("Peer connection not connected.");
                    }
 
                    var dc = pc.DataChannels
                               .FirstOrDefault(x => x.label == WebRTCEndPoint.OPENAI_DATACHANNEL_NAME);
                    if (dc == null)
                    {
-                       return Error.New("No OpenAI data channel available.");
+                       return LanguageExt.Common.Error.New("No OpenAI data channel available.");
                    }
 
                    return dc;
                },
-               () => Error.New("Peer connection not established.")
+               () => LanguageExt.Common.Error.New("Peer connection not established.")
            );
     }
 }

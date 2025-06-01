@@ -25,6 +25,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using SIPSorcery.Net;
 using SIPSorceryMedia.Abstractions;
+using OpenAIDotNet = global::OpenAI;
 
 namespace SIPSorcery.OpenAI.WebRTC;
 
@@ -60,7 +61,7 @@ public class WebRTCEndPoint : IWebRTCEndPoint, IDisposable
     /// <summary>
     /// Raised whenever a parsed OpenAI server event arrives on the data channel.
     /// </summary>
-    public event Action<RTCDataChannel, OpenAIServerEventBase>? OnDataChannelMessage;
+    public event Action<RTCDataChannel, OpenAIDotNet.Realtime.IServerEvent?>? OnDataChannelMessage;
 
     /// <summary>
     /// Preferred constructor for dependency injection.
@@ -190,7 +191,7 @@ public class WebRTCEndPoint : IWebRTCEndPoint, IDisposable
         );
     }
 
-    public void SendDataChannelMessage(OpenAIServerEventBase message)
+    public void SendDataChannelMessage(string message)
     {
         PeerConnection.Match(
             pc =>
@@ -203,15 +204,15 @@ public class WebRTCEndPoint : IWebRTCEndPoint, IDisposable
                 }
 
                 _logger.LogDebug($"Sending initial response create to first call data channel {dc.label}.");
-                _logger.LogTrace(message.ToJson());
+                _logger.LogTrace(message);
 
-                dc.send(message.ToJson());
+                dc.send(message);
             },
             () => _logger.LogError("No peer connection available to send data channel message.")
         );
     }
 
-    internal void InvokeOnDataChannelMessage(RTCDataChannel dc, OpenAIServerEventBase message)
+    internal void InvokeOnDataChannelMessage(RTCDataChannel dc, OpenAIDotNet.Realtime.IServerEvent? message)
         => OnDataChannelMessage?.Invoke(dc, message);
 
     /// <summary>
