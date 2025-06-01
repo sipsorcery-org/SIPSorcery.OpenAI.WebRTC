@@ -32,11 +32,11 @@ using OpenAI.Realtime;
 using Serilog;
 using Serilog.Extensions.Logging;
 using SIPSorcery.Media;
-using SIPSorcery.OpenAI.WebRTC;
 using SIPSorceryMedia.Abstractions;
 using SIPSorceryMedia.Windows;
 using System;
 using System.Threading.Tasks;
+using OpenAI.WebRTC;
 
 namespace demo;
 

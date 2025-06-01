@@ -22,11 +22,10 @@ using System.Net.Http;
 using System.Text.Json;
 using System.Text;
 using System.Threading.Tasks;
-using LanguageExt.Common;
 using System.Threading;
 using System;
 
-namespace SIPSorcery.OpenAI.WebRTC;
+namespace OpenAI.WebRTC;
 
 public class WebRTCRestClient : IWebRTCRestClient
 {
@@ -50,7 +49,7 @@ public class WebRTCRestClient : IWebRTCRestClient
     /// <param name="voice">The voice to request for the session.</param>
     /// <param name="ct">Cancellation token to allow the request to be cancelled.</param>
     /// <returns>Either a descriptive error if the request failed or a string representing the newly created ephemeral API key.</returns>
-    public async Task<Either<Error, string>> CreateEphemeralKeyAsync(
+    public async Task<Either<LanguageExt.Common.Error, string>> CreateEphemeralKeyAsync(
         string model = OPENAI_REALTIME_DEFAULT_MODEL,
         OpenAIVoicesEnum voice = OpenAIVoicesEnum.shimmer,
         CancellationToken ct = default)
@@ -67,7 +66,7 @@ public class WebRTCRestClient : IWebRTCRestClient
         if (!res.IsSuccessStatusCode)
         {
             var body = await res.Content.ReadAsStringAsync(ct).ConfigureAwait(false);
-            return Error.New($"CreateEphemeralKey failed [{res.StatusCode}]: {body}");
+            return LanguageExt.Common.Error.New($"CreateEphemeralKey failed [{res.StatusCode}]: {body}");
         }
 
         using var doc = await JsonDocument.ParseAsync(
@@ -81,7 +80,7 @@ public class WebRTCRestClient : IWebRTCRestClient
             return secret;
         }
 
-        return Error.New("Failed to parse client_secret.value");
+        return LanguageExt.Common.Error.New("Failed to parse client_secret.value");
     }
 
     /// <summary>
@@ -95,7 +94,7 @@ public class WebRTCRestClient : IWebRTCRestClient
     /// <remarks>
     /// See https://platform.openai.com/docs/guides/realtime-webrtc#creating-an-ephemeral-token.
     /// </remarks>
-    public async Task<Either<Error, string>> GetSdpAnswerAsync(
+    public async Task<Either<LanguageExt.Common.Error, string>> GetSdpAnswerAsync(
         string offerSdp,
         string model = OPENAI_REALTIME_DEFAULT_MODEL,
         CancellationToken ct = default)
@@ -111,7 +110,7 @@ public class WebRTCRestClient : IWebRTCRestClient
         if (!res.IsSuccessStatusCode)
         {
             var body = await res.Content.ReadAsStringAsync(ct).ConfigureAwait(false);
-            return Error.New($"GetOpenAIAnswerSdp failed [{res.StatusCode}]: {body}");
+            return LanguageExt.Common.Error.New($"GetOpenAIAnswerSdp failed [{res.StatusCode}]: {body}");
         }
 
         var sdp = await res.Content.ReadAsStringAsync(ct).ConfigureAwait(false);

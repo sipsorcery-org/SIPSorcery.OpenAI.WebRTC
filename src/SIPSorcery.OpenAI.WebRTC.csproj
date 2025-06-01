@@ -14,6 +14,7 @@
     <PackageReference Include="LanguageExt.Core" Version="4.4.9" />
     <PackageReference Include="Microsoft.Extensions.Logging" Version="9.0.0" />
     <PackageReference Include="Microsoft.Extensions.Http" Version="9.0.0" />
+    <PackageReference Include="OpenAI-DotNet" Version="8.6.4" />
     <PackageReference Include="SIPSorcery" Version="8.0.20-pre" />
   </ItemGroup>
 
@@ -24,7 +25,7 @@
     <PackageLicenseExpression>BSD-3-Clause</PackageLicenseExpression>
     <Title>SIPSorcery</Title>
     <Summary>A .NET library for interacting with OpenAI's real-time WebRTC API.</Summary>
-    <Description>A .NET library for interacting with OpenAI's real-time WebRTC API. It provides helper classes to negotiate peer connections, send and receive Opus audio frames and exchange control messages over a data channel.
+    <Description>A .NET library for interacting with OpenAI's real-time WebRTC API. It provides helper classes to negotiate peer connections, send and receive Opus audio frames and exchange control messages over a data channel. Not affiliated with OpenAI.
     </Description>
     <Company>SIP Sorcery PTY LTD</Company>
     <Product>SIPSorcery.OpenAI.WebRTC</Product>
@@ -63,13 +64,4 @@
 	<None Include="..\README.md" Pack="true" PackagePath="" />
   </ItemGroup>
   
-  <ItemGroup>
-    <ProjectReference Include="..\..\github\OpenAI-DotNet\OpenAI-DotNet\OpenAI-DotNet.csproj" />
-  </ItemGroup>
-  
-  <ItemGroup>
-    <Folder Include="Models\" />
-  </ItemGroup>
-
-
 </Project>

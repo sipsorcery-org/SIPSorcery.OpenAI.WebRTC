@@ -1,4 +1,5 @@
-﻿namespace SIPSorcery.OpenAI.WebRTC;
+﻿namespace OpenAI.WebRTC;
+
 public enum OpenAIVoicesEnum
 {
     alloy,

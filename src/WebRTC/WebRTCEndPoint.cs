@@ -20,14 +20,12 @@ using System;
 using System.Linq;
 using System.Threading.Tasks;
 using LanguageExt;
-using LanguageExt.Common;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using SIPSorcery.Net;
 using SIPSorceryMedia.Abstractions;
-using OpenAIDotNet = global::OpenAI;
 
-namespace SIPSorcery.OpenAI.WebRTC;
+namespace OpenAI.WebRTC;
 
 public class WebRTCEndPoint : IWebRTCEndPoint, IDisposable
 {
@@ -61,7 +59,7 @@ public class WebRTCEndPoint : IWebRTCEndPoint, IDisposable
     /// <summary>
     /// Raised whenever a parsed OpenAI server event arrives on the data channel.
     /// </summary>
-    public event Action<RTCDataChannel, OpenAIDotNet.Realtime.IServerEvent?>? OnDataChannelMessage;
+    public event Action<RTCDataChannel, Realtime.IServerEvent?>? OnDataChannelMessage;
 
     /// <summary>
     /// Preferred constructor for dependency injection.
@@ -98,7 +96,7 @@ public class WebRTCEndPoint : IWebRTCEndPoint, IDisposable
         DataChannelMessenger = new DataChannelMessenger(this, logger);
     }
 
-    public async Task<Either<Error, Unit>> StartConnect(RTCConfiguration? pcConfig = null, string? model = null)
+    public async Task<Either<LanguageExt.Common.Error, Unit>> StartConnect(RTCConfiguration? pcConfig = null, string? model = null)
     {
         if (PeerConnection != null)
         {
@@ -212,7 +210,7 @@ public class WebRTCEndPoint : IWebRTCEndPoint, IDisposable
         );
     }
 
-    internal void InvokeOnDataChannelMessage(RTCDataChannel dc, OpenAIDotNet.Realtime.IServerEvent? message)
+    internal void InvokeOnDataChannelMessage(RTCDataChannel dc, Realtime.IServerEvent? message)
         => OnDataChannelMessage?.Invoke(dc, message);
 
     /// <summary>

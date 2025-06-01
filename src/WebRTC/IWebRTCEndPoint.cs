@@ -17,12 +17,10 @@
 using System;
 using System.Threading.Tasks;
 using LanguageExt;
-using LanguageExt.Common;
 using SIPSorcery.Net;
 using SIPSorceryMedia.Abstractions;
-using OpenAIDotNet = global::OpenAI;
 
-namespace SIPSorcery.OpenAI.WebRTC;
+namespace OpenAI.WebRTC;
 
 /// <summary>
 /// Contract for a WebRTC endpoint that communicates with the OpenAI real‑time
@@ -65,14 +63,14 @@ public interface IWebRTCEndPoint
     /// <summary>
     /// Raised whenever a parsed OpenAI server event arrives on the data channel.
     /// </summary>
-    event Action<RTCDataChannel, OpenAIDotNet.Realtime.IServerEvent?>? OnDataChannelMessage;
+    event Action<RTCDataChannel, Realtime.IServerEvent?>? OnDataChannelMessage;
 
     /// <summary>
     /// Initiates connection negotiation with the OpenAI service.
     /// </summary>
     /// <param name="pcConfig">Optional WebRTC configuration to use.</param>
     /// <param name="model">Optional model name to request.</param>
-    Task<Either<Error, Unit>> StartConnect(RTCConfiguration? pcConfig = null, string? model = null);
+    Task<Either<LanguageExt.Common.Error, Unit>> StartConnect(RTCConfiguration? pcConfig = null, string? model = null);
 
     /// <summary>
     /// Sends an Opus encoded audio frame to the remote peer.
