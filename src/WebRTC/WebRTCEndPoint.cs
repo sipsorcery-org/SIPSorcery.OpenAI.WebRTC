@@ -39,7 +39,7 @@ public class WebRTCEndPoint : IWebRTCEndPoint, IDisposable
 
     private bool _disposed = false;
 
-    public RTCPeerConnection? PeerConnection { get; private set; }
+    public Option<RTCPeerConnection> PeerConnection { get; private set; } = Option<RTCPeerConnection>.None;
 
     public DataChannelMessenger DataChannelMessenger { get; private set; }
 
@@ -103,12 +103,13 @@ public class WebRTCEndPoint : IWebRTCEndPoint, IDisposable
             return Unit.Default;
         }
 
-        PeerConnection = CreatePeerConnection(pcConfig);
+        var pc = CreatePeerConnection(pcConfig);
+        PeerConnection =  Option<RTCPeerConnection>.Some(pc);
 
         var useModel = string.IsNullOrWhiteSpace(model) ? OPENAI_DEFAULT_MODEL : model;
 
-        var offer = PeerConnection.createOffer();
-        await PeerConnection.setLocalDescription(offer).ConfigureAwait(false);
+        var offer = pc.createOffer();
+        await pc.setLocalDescription(offer).ConfigureAwait(false);
 
         var sdpAnswerResult = await _openAIRealtimeRestClient.GetSdpAnswerAsync(offer.sdp, useModel).ConfigureAwait(false);
 
@@ -119,40 +120,40 @@ public class WebRTCEndPoint : IWebRTCEndPoint, IDisposable
                 type = RTCSdpType.answer,
                 sdp  = sdpAnswer
             };
-            PeerConnection.setRemoteDescription(answer);
+            pc.setRemoteDescription(answer);
             return Unit.Default;
         });
     }
 
     private RTCPeerConnection CreatePeerConnection(RTCConfiguration? pcConfig)
     {
-        PeerConnection = new RTCPeerConnection(pcConfig);
+        var pc = new RTCPeerConnection(pcConfig);
 
         MediaStreamTrack audioTrack = new MediaStreamTrack(AudioCommonlyUsedFormats.OpusWebRTC, MediaStreamStatusEnum.SendRecv);
-        PeerConnection.addTrack(audioTrack);
+        pc.addTrack(audioTrack);
 
         // This call is synchronous when the WebRTC connection is not yet connected.
-        var dataChannel = PeerConnection.createDataChannel(OPENAI_DATACHANNEL_NAME).Result;
+        var dataChannel = pc.createDataChannel(OPENAI_DATACHANNEL_NAME).Result;
 
-        PeerConnection.onconnectionstatechange += state => _logger.LogDebug($"Peer connection connected changed to {state}.");
-        PeerConnection.OnTimeout += mediaType => _logger.LogDebug($"Timeout on media {mediaType}.");
-        PeerConnection.oniceconnectionstatechange += state => _logger.LogDebug($"ICE connection state changed to {state}.");
+        pc.onconnectionstatechange += state => _logger.LogDebug($"Peer connection connected changed to {state}.");
+        pc.OnTimeout += mediaType => _logger.LogDebug($"Timeout on media {mediaType}.");
+        pc.oniceconnectionstatechange += state => _logger.LogDebug($"ICE connection state changed to {state}.");
 
-        PeerConnection.onsignalingstatechange += () =>
+        pc.onsignalingstatechange += () =>
         {
-            if (PeerConnection.signalingState == RTCSignalingState.have_local_offer)
+            if (pc.signalingState == RTCSignalingState.have_local_offer)
             {
-                _logger.LogTrace($"Local SDP:\n{PeerConnection.localDescription.sdp}");
+                _logger.LogTrace($"Local SDP:\n{pc.localDescription.sdp}");
             }
-            else if (PeerConnection.signalingState is RTCSignalingState.have_remote_offer or RTCSignalingState.stable)
+            else if (pc.signalingState is RTCSignalingState.have_remote_offer or RTCSignalingState.stable)
             {
-                _logger.LogTrace($"Remote SDP:\n{PeerConnection.remoteDescription?.sdp}");
+                _logger.LogTrace($"Remote SDP:\n{pc.remoteDescription?.sdp}");
             }
         };
 
-        PeerConnection.OnAudioFrameReceived += (encodedAudioFrame) => OnAudioFrameReceived?.Invoke(encodedAudioFrame);
+        pc.OnAudioFrameReceived += (encodedAudioFrame) => OnAudioFrameReceived?.Invoke(encodedAudioFrame);
 
-        PeerConnection.onconnectionstatechange += (state) =>
+        pc.onconnectionstatechange += (state) =>
         {
             if (state is RTCPeerConnectionState.failed)
             {
@@ -168,33 +169,42 @@ public class WebRTCEndPoint : IWebRTCEndPoint, IDisposable
         dataChannel.onopen += () => OnPeerConnectionConnected?.Invoke();
         dataChannel.onmessage += DataChannelMessenger.HandleIncomingData;
 
-        return PeerConnection;
+        return pc;
     }
 
     public void SendAudio(uint durationRtpUnits, byte[] sample)
     {
-        if (PeerConnection != null && PeerConnection.connectionState == RTCPeerConnectionState.connected)
-        {
-            PeerConnection.SendAudio(durationRtpUnits, sample);
-        }
+        PeerConnection.Match(
+            pc =>
+            {
+                if (pc.connectionState == RTCPeerConnectionState.connected)
+                {
+                    pc.SendAudio(durationRtpUnits, sample);
+                }
+            },
+            () => _logger.LogError("No peer connection available to send audio.")
+        );
     }
 
     public void SendDataChannelMessage(OpenAIServerEventBase message)
     {
-        var dc = PeerConnection?.DataChannels.FirstOrDefault();
+        PeerConnection.Match(
+            pc =>
+            {
+                var dc = pc.DataChannels.FirstOrDefault();
+                if (dc == null)
+                {
+                    _logger.LogError("No data channel available to send message.");
+                    return;
+                }
 
-        if (dc == null)
-        {
-            _logger.LogError("No data channel available to send message.");
-            return;
-        }
-        else
-        {
-            _logger.LogDebug($"Sending initial response create to first call data channel {dc.label}.");
-            _logger.LogTrace(message.ToJson());
+                _logger.LogDebug($"Sending initial response create to first call data channel {dc.label}.");
+                _logger.LogTrace(message.ToJson());
 
-            dc.send(message.ToJson());
-        }
+                dc.send(message.ToJson());
+            },
+            () => _logger.LogError("No peer connection available to send data channel message.")
+        );
     }
 
     internal void InvokeOnDataChannelMessage(RTCDataChannel dc, OpenAIServerEventBase message)
@@ -210,16 +220,18 @@ public class WebRTCEndPoint : IWebRTCEndPoint, IDisposable
             return;
         }
 
-        if (PeerConnection != null)
+        PeerConnection.IfSome(pc =>
         {
             _logger.LogDebug("Closing PeerConnection.");
 
-            PeerConnection.Close("normal");
+            pc.Close("normal");
 
             OnPeerConnectionClosed?.Invoke();
 
-            PeerConnection.OnAudioFrameReceived -= OnAudioFrameReceived;
-        }
+            pc.OnAudioFrameReceived -= OnAudioFrameReceived;
+        });
+
+        PeerConnection = Option<RTCPeerConnection>.None;
     }
 
     /// <summary>

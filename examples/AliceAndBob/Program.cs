@@ -19,7 +19,6 @@
 
 using System;
 using System.Linq;
-using System.Net;
 using System.Numerics;
 using System.Threading;
 using System.Threading.Tasks;
@@ -107,16 +106,21 @@ class Program
         Log.Information($"Both calls successfully connected.");
 
         // Get the conversation started!
-        if (aliceWebrtcEndPoint.PeerConnection != null && bobWebrtcEndPoint.PeerConnection != null)
+        if (aliceWebrtcEndPoint.PeerConnection.IsSome && bobWebrtcEndPoint.PeerConnection.IsSome)
         {
             // Send RTP audio payloads receied from Alice to Bob.
-            aliceWebrtcEndPoint.PeerConnection.PipeAudioTo(bobWebrtcEndPoint.PeerConnection);
+            aliceWebrtcEndPoint.PipeAudioTo(bobWebrtcEndPoint);
 
             // Send RTP audio payloads receied from Bob to Alice.
-            bobWebrtcEndPoint.PeerConnection.PipeAudioTo(aliceWebrtcEndPoint.PeerConnection);
+            bobWebrtcEndPoint.PipeAudioTo(aliceWebrtcEndPoint);
 
             bobWebrtcEndPoint.DataChannelMessenger.SendSessionUpdate(OpenAIVoicesEnum.ash);
             aliceWebrtcEndPoint.DataChannelMessenger.SendResponseCreate(OpenAIVoicesEnum.shimmer, "Say Hi!");
+        }
+        else
+        {
+            Log.Error("Failed to establish peer connections for both Alice and Bob.");
+            return;
         }
 
         if (_audioScopeForm != null)
@@ -124,8 +128,8 @@ class Program
             _audioScopeForm.FormClosed += (s, e) =>
             {
                 Log.Logger.Information("Audio scope form closed, exiting application.");
-                aliceWebrtcEndPoint.PeerConnection?.Close("User exit");
-                bobWebrtcEndPoint.PeerConnection?.Close("User exit");
+                aliceWebrtcEndPoint.PeerConnection.IfSome(pc => pc.Close("User exit"));
+                bobWebrtcEndPoint.PeerConnection.IfSome(pc => pc.Close("User exit"));
             };
         }
 
@@ -135,8 +139,8 @@ class Program
         Console.CancelKeyPress += (s, e) =>
         {
             e.Cancel = true;
-            aliceWebrtcEndPoint.PeerConnection?.Close("User exit");
-            bobWebrtcEndPoint.PeerConnection?.Close("User exit");
+            aliceWebrtcEndPoint.PeerConnection.IfSome(pc => pc.Close("User exit"));
+            bobWebrtcEndPoint.PeerConnection.IfSome(pc => pc.Close("User exit"));
             exitTcs.TrySetResult(null);
         };
 

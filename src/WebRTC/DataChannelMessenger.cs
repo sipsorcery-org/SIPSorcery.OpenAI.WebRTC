@@ -187,18 +187,24 @@ public class DataChannelMessenger
     /// </summary>
     private Either<Error, RTCDataChannel> ValidateDataChannel()
     {
-        var pc = _endpoint.PeerConnection;
-        if (pc == null || pc.connectionState != RTCPeerConnectionState.connected)
-        {
-            return Error.New("Peer connection not established.");
-        }
+        return _endpoint.PeerConnection.Match<Either<Error, RTCDataChannel>>(
+               pc =>
+               {
+                   if (pc.connectionState != RTCPeerConnectionState.connected)
+                   {
+                       return Error.New("Peer connection not connected.");
+                   }
 
-        var dc = pc.DataChannels.FirstOrDefault(x => x.label == WebRTCEndPoint.OPENAI_DATACHANNEL_NAME);
-        if (dc == null)
-        {
-            return Error.New("No OpenAI data channel available.");
-        }
+                   var dc = pc.DataChannels
+                              .FirstOrDefault(x => x.label == WebRTCEndPoint.OPENAI_DATACHANNEL_NAME);
+                   if (dc == null)
+                   {
+                       return Error.New("No OpenAI data channel available.");
+                   }
 
-        return dc;
+                   return dc;
+               },
+               () => Error.New("Peer connection not established.")
+           );
     }
 }

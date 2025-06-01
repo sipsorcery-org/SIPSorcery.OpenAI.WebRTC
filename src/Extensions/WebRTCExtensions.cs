@@ -15,6 +15,7 @@
 // BDS BY-NC-SA restriction, see included LICENSE.md file.
 //-----------------------------------------------------------------------------
 
+using LanguageExt;
 using Microsoft.Extensions.DependencyInjection;
 using SIPSorcery.Net;
 using SIPSorceryMedia.Abstractions;
@@ -90,6 +91,29 @@ public static class WebRTCServiceCollectionExtensions
             webRTCEndPoint.OnAudioFrameReceived -= audioEndPoint.GotEncodedMediaFrame;
             await audioEndPoint.Close();
         };
+    }
+
+    /// <summary>
+    /// Pipes encoded audio frames from the <paramref name="sourceEndpoint"/> to the
+    /// <paramref name="destinationEndpoint"/> by directly forwarding RTP audio packets.
+    /// If either endpoint’s PeerConnection is None, this method does nothing.
+    /// </summary>
+    /// <param name="sourceEndpoint">The IWebRTCEndPoint to receive audio frames from.</param>
+    /// <param name="destinationEndpoint">The IWebRTCEndPoint to send audio frames to.</param>
+    public static void PipeAudioTo(this IWebRTCEndPoint sourceEndpoint, IWebRTCEndPoint destinationEndpoint)
+    {
+        sourceEndpoint.PeerConnection.Match(
+            srcPc => destinationEndpoint.PeerConnection.Match(
+                destPc =>
+                {
+                    // Both endpoints have a valid RTCPeerConnection, so wire up audio forwarding:
+                    srcPc.PipeAudioTo(destPc);
+                    return Unit.Default;
+                },
+                () => Unit.Default
+            ),
+            () => Unit.Default
+        );
     }
 
     /// <summary>

@@ -25,7 +25,7 @@ namespace SIPSorcery.OpenAI.WebRTC;
 
 public interface IWebRTCEndPoint
 {
-    RTCPeerConnection? PeerConnection { get; }
+    Option<RTCPeerConnection> PeerConnection { get; }
 
     public DataChannelMessenger DataChannelMessenger { get; }
 

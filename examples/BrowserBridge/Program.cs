@@ -152,20 +152,29 @@ class Program
 
     private static void ConnectPeers(RTCPeerConnection browserPc, IWebRTCEndPoint openAiEndPoint)
     {
-        if (browserPc != null && openAiEndPoint?.PeerConnection != null)
+        if (browserPc == null)
         {
-            // Send RTP audio payloads receied from the brower WebRTC peer connection to OpenAI.
-            browserPc.PipeAudioTo(openAiEndPoint.PeerConnection);
-
-            // Send RTP audio payloads received from OpenAI to the browser WebRTC peer connection.
-            openAiEndPoint.PeerConnection.PipeAudioTo(browserPc);
-
-            // If the browser peer connection closes we need to close the OpenAI peer connection too.
-            browserPc.OnClosed += () => openAiEndPoint.PeerConnection?.Close("Browser peer closed.");
-
-            // If the OpenAI peer connection closes we need to close the browser peer connection too.
-            openAiEndPoint.PeerConnection.OnClosed += () => browserPc.Close("OpenAI peer closed.");
+            Log.Error("Browser peer connection is null.");
+            return;
         }
+
+        openAiEndPoint.PeerConnection.Match(
+            pc =>
+            {
+                // Send RTP audio payloads receied from the brower WebRTC peer connection to OpenAI.
+                browserPc.PipeAudioTo(pc);
+
+                // Send RTP audio payloads received from OpenAI to the browser WebRTC peer connection.
+                pc.PipeAudioTo(browserPc);
+
+                // If the browser peer connection closes we need to close the OpenAI peer connection too.
+                browserPc.OnClosed += () => pc.Close("Browser peer closed.");
+
+                // If the OpenAI peer connection closes we need to close the browser peer connection too.
+                pc.OnClosed += () => browserPc.Close("OpenAI peer closed.");
+            },
+            () => Log.Error("OpenAI peer connection is null.")
+        );
     }
 
     /// <summary>
