@@ -84,7 +84,7 @@ class Program
             Log.Logger.Information("WebRTC peer connection established.");
 
             // Optionally send a session update message to adjust the session parameters.
-            var sessionUpdateResult = webrtcEndPoint.DataChannelMessenger.SendSessionUpdate(OpenAIVoicesEnum.coral, true, "Keep it short.");
+            var sessionUpdateResult = webrtcEndPoint.DataChannelMessenger.SendSessionUpdate(OpenAIVoicesEnum.shimmer, true, "Keep it short.");
             if (sessionUpdateResult.IsLeft)
             {
                 Log.Logger.Error($"Failed to send rsession update message: {sessionUpdateResult.LeftAsEnumerable().First()}");
@@ -131,7 +131,6 @@ class Program
     private static WindowsAudioEndPoint InitialiseWindowsAudioEndPoint()
     {
         var audioEncoder = new AudioEncoder(AudioCommonlyUsedFormats.OpusWebRTC);
-        //var audioEncoder = new AudioEncoder();
         return new WindowsAudioEndPoint(audioEncoder);
     }
 }
