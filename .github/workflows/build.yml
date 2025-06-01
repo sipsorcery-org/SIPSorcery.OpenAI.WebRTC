@@ -1,0 +1,25 @@
+name: Check Build
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        framework: ['net8.0']
+    runs-on: ubuntu-latest
+    steps:
+      # Checkout the repository
+      - uses: actions/checkout@v2
+
+      # Set up .NET SDK
+      - uses: actions/setup-dotnet@v2
+        with:
+          dotnet-version: '8.0.x'
+
+      # Restore dependencies
+      - name: Restore dependencies
+        run: dotnet restore src/SIPSorcery.OpenAI.WebRTC.csproj
+
+      # Build the project
+      - name: Build
+        run: dotnet build src/SIPSorcery.OpenAI.WebRTC.csproj -c Release --no-restore
+

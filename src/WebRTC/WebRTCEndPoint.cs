@@ -65,8 +65,9 @@ public class WebRTCEndPoint : IWebRTCEndPoint, IDisposable
     /// <summary>
     /// Preferred constructor for dependency injection.
     /// </summary>
-    /// <param name="logger"></param>
-    /// <param name="openAIRealtimeRestClient"></param>
+    /// <param name="logger">Logging instance for this class.</param>
+    /// <param name="dataChannelMessengerLogger">Dedicated logging instance for data channel messenger class.</param>
+    /// <param name="openAIRealtimeRestClient">Client for calls to OpenAI REST endpoint.</param>
     public WebRTCEndPoint(
         ILogger<WebRTCEndPoint> logger,
         ILogger<DataChannelMessenger> dataChannelMessengerLogger,
