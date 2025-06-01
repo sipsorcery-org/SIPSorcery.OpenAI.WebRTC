@@ -26,6 +26,10 @@ public class OpenAISession
     [JsonPropertyName("output_audio_format")]
     public OpenAIAudioFormatsEnum OutputAudioFormat { get; set; } = OpenAIAudioFormatsEnum.pcm16;
 
+    [JsonPropertyName("input_audio_transcription")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public OpenAIInputAudioTranscriptionSettings? InputAudioTranscription { get; set; }
+
     [JsonPropertyName("turn_detection")]
     public OpenAITurnDetection? TurnDetection { get; set; }
 

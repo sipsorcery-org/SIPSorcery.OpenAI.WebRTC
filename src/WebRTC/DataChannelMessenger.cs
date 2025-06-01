@@ -57,6 +57,7 @@ public class DataChannelMessenger
     /// </summary>
     public Either<Error, Unit> SendSessionUpdate(
         OpenAIVoicesEnum voice,
+        bool useInputAudioTranscription = false,
         string? instructions = null,
         string? model = null)
     {
@@ -78,6 +79,11 @@ public class DataChannelMessenger
                 Instructions = instructions
             }
         };
+
+        if(useInputAudioTranscription)
+        {
+            message.Session.InputAudioTranscription = new OpenAIInputAudioTranscriptionSettings();
+        }
 
         if (!string.IsNullOrWhiteSpace(model))
         {
@@ -149,11 +155,15 @@ public class DataChannelMessenger
         OpenAIServerEventBase? parsedEvent = baseEvent.Type switch
         {
             OpenAIConversationItemCreated.TypeName => JsonSerializer.Deserialize<OpenAIConversationItemCreated>(msgText, JsonOptions.Default),
+            OpenAIConversationItemIInputAudioTranscriptionCompleted.TypeName => JsonSerializer.Deserialize<OpenAIConversationItemIInputAudioTranscriptionCompleted>(msgText, JsonOptions.Default),
+            OpenAIConversationItemIInputAudioTranscriptionDelta.TypeName => JsonSerializer.Deserialize<OpenAIConversationItemIInputAudioTranscriptionDelta>(msgText, JsonOptions.Default),
             OpenAIInputAudioBufferCommitted.TypeName => JsonSerializer.Deserialize<OpenAIInputAudioBufferCommitted>(msgText, JsonOptions.Default),
             OpenAIInputAudioBufferSpeechStarted.TypeName => JsonSerializer.Deserialize<OpenAIInputAudioBufferSpeechStarted>(msgText, JsonOptions.Default),
             OpenAIInputAudioBufferSpeechStopped.TypeName => JsonSerializer.Deserialize<OpenAIInputAudioBufferSpeechStopped>(msgText, JsonOptions.Default),
             OpenAIOuputAudioBufferAudioStarted.TypeName => JsonSerializer.Deserialize<OpenAIOuputAudioBufferAudioStarted>(msgText, JsonOptions.Default),
             OpenAIOuputAudioBufferAudioStopped.TypeName => JsonSerializer.Deserialize<OpenAIOuputAudioBufferAudioStopped>(msgText, JsonOptions.Default),
+            OpenAIOutputAudioBufferStarted.TypeName => JsonSerializer.Deserialize<OpenAIOutputAudioBufferStarted>(msgText, JsonOptions.Default),
+            OpenAIOutputAudioBufferStopped.TypeName => JsonSerializer.Deserialize<OpenAIOutputAudioBufferStopped>(msgText, JsonOptions.Default),
             OpenAIRateLimitsUpdated.TypeName => JsonSerializer.Deserialize<OpenAIRateLimitsUpdated>(msgText, JsonOptions.Default),
             OpenAIResponseAudioDone.TypeName => JsonSerializer.Deserialize<OpenAIResponseAudioDone>(msgText, JsonOptions.Default),
             OpenAIResponseAudioTranscriptDelta.TypeName => JsonSerializer.Deserialize<OpenAIResponseAudioTranscriptDelta>(msgText, JsonOptions.Default),
