@@ -23,27 +23,70 @@ using SIPSorceryMedia.Abstractions;
 
 namespace SIPSorcery.OpenAI.WebRTC;
 
+/// <summary>
+/// Contract for a WebRTC endpoint that communicates with the OpenAI real‑time
+/// service. Implementations handle connection negotiation, media forwarding and
+/// data channel messaging.
+/// </summary>
 public interface IWebRTCEndPoint
 {
+    /// <summary>
+    /// Gets the underlying peer connection if one has been created.
+    /// </summary>
     Option<RTCPeerConnection> PeerConnection { get; }
 
-    public DataChannelMessenger DataChannelMessenger { get; }
+    /// <summary>
+    /// Helper class used to send OpenAI control messages over the data channel.
+    /// </summary>
+    DataChannelMessenger DataChannelMessenger { get; }
 
+    /// <summary>
+    /// Fired once the data channel has opened and the peer connection is fully
+    /// established.
+    /// </summary>
     event Action? OnPeerConnectionConnected;
 
+    /// <summary>
+    /// Fired if the peer connection transitions into the <c>failed</c> state.
+    /// </summary>
     event Action? OnPeerConnectionFailed;
 
+    /// <summary>
+    /// Fired when the peer connection is closed or disconnected.
+    /// </summary>
     event Action? OnPeerConnectionClosed;
 
+    /// <summary>
+    /// Raised for each encoded audio frame received from OpenAI.
+    /// </summary>
     event Action<EncodedAudioFrame>? OnAudioFrameReceived;
 
+    /// <summary>
+    /// Raised whenever a parsed OpenAI server event arrives on the data channel.
+    /// </summary>
     event Action<RTCDataChannel, OpenAIServerEventBase>? OnDataChannelMessage;
 
+    /// <summary>
+    /// Initiates connection negotiation with the OpenAI service.
+    /// </summary>
+    /// <param name="pcConfig">Optional WebRTC configuration to use.</param>
+    /// <param name="model">Optional model name to request.</param>
     Task<Either<Error, Unit>> StartConnect(RTCConfiguration? pcConfig = null, string? model = null);
 
+    /// <summary>
+    /// Sends an Opus encoded audio frame to the remote peer.
+    /// </summary>
+    /// <param name="durationMilliseconds">Duration of the frame in milliseconds.</param>
+    /// <param name="encodedAudio">The Opus encoded audio payload.</param>
     void SendAudio(uint durationMilliseconds, byte[] encodedAudio);
 
+    /// <summary>
+    /// Sends a control message across the data channel.
+    /// </summary>
     void SendDataChannelMessage(OpenAIServerEventBase message);
 
+    /// <summary>
+    /// Closes the peer connection and releases resources.
+    /// </summary>
     void Close();
 }
