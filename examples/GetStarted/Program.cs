@@ -84,9 +84,11 @@ class Program
         {
             Log.Logger.Information("WebRTC peer connection established.");
 
+            var voice = RealtimeVoicesEnum.verse;
+
             // Optionally send a session update message to adjust the session parameters.
             var sessionUpdateResult = webrtcEndPoint.DataChannelMessenger.SendSessionUpdate(
-                RealtimeVoicesEnum.shimmer,
+                voice,
                 "Keep it short.",
                 transcriptionModel: TranscriptionModelEnum.Whisper1);
 
@@ -96,7 +98,7 @@ class Program
             }
 
             // Trigger the conversation by sending a response create message.
-            var result = webrtcEndPoint.DataChannelMessenger.SendResponseCreate(RealtimeVoicesEnum.shimmer, "Say Hi!");
+            var result = webrtcEndPoint.DataChannelMessenger.SendResponseCreate(voice, "Say Hi!");
             if (result.IsLeft)
             {
                 Log.Logger.Error($"Failed to send response create message: {result.LeftAsEnumerable().First()}");

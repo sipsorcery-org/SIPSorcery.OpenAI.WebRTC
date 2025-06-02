@@ -31,7 +31,6 @@ namespace SIPSorcery.OpenAIWebRTC;
 
 public class WebRTCEndPoint : IWebRTCEndPoint, IDisposable
 {
-    public const string OPENAI_DEFAULT_MODEL = "gpt-4o-realtime-preview-2024-12-17";
     public const string OPENAI_DATACHANNEL_NAME = "oai-events";
 
     private ILogger _logger = NullLogger.Instance;
@@ -98,7 +97,7 @@ public class WebRTCEndPoint : IWebRTCEndPoint, IDisposable
         DataChannelMessenger = new DataChannelMessenger(this, logger);
     }
 
-    public async Task<Either<Error, Unit>> StartConnect(RTCConfiguration? pcConfig = null, string? model = null)
+    public async Task<Either<Error, Unit>> StartConnect(RTCConfiguration? pcConfig = null, RealtimeModelsEnum? model = null)
     {
         if (PeerConnection != null)
         {
@@ -108,12 +107,10 @@ public class WebRTCEndPoint : IWebRTCEndPoint, IDisposable
         var pc = CreatePeerConnection(pcConfig);
         PeerConnection =  Option<RTCPeerConnection>.Some(pc);
 
-        var useModel = string.IsNullOrWhiteSpace(model) ? OPENAI_DEFAULT_MODEL : model;
-
         var offer = pc.createOffer();
         await pc.setLocalDescription(offer).ConfigureAwait(false);
 
-        var sdpAnswerResult = await _openAIRealtimeRestClient.GetSdpAnswerAsync(offer.sdp, useModel).ConfigureAwait(false);
+        var sdpAnswerResult = await _openAIRealtimeRestClient.GetSdpAnswerAsync(offer.sdp, model).ConfigureAwait(false);
 
         return sdpAnswerResult.Map(sdpAnswer =>
         {

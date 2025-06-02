@@ -25,12 +25,12 @@ namespace SIPSorcery.OpenAIWebRTC;
 public interface IWebRTCRestClient
 {
     Task<Either<Error, string>> CreateEphemeralKeyAsync(
-        string model = WebRTCRestClient.OPENAI_REALTIME_DEFAULT_MODEL,
         RealtimeVoicesEnum voice = RealtimeVoicesEnum.shimmer,
+        RealtimeModelsEnum? model = null,
         CancellationToken ct = default);
 
     Task<Either<Error, string>> GetSdpAnswerAsync(
         string offerSdp,
-        string model = WebRTCRestClient.OPENAI_REALTIME_DEFAULT_MODEL,
+        RealtimeModelsEnum? model,
         CancellationToken ct = default);
 }

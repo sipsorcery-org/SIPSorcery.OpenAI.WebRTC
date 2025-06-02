@@ -72,7 +72,7 @@ public interface IWebRTCEndPoint
     /// </summary>
     /// <param name="pcConfig">Optional WebRTC configuration to use.</param>
     /// <param name="model">Optional model name to request.</param>
-    Task<Either<Error, Unit>> StartConnect(RTCConfiguration? pcConfig = null, string? model = null);
+    Task<Either<Error, Unit>> StartConnect(RTCConfiguration? pcConfig = null, RealtimeModelsEnum? model = null);
 
     /// <summary>
     /// Sends an Opus encoded audio frame to the remote peer.
