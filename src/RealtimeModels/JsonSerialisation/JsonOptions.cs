@@ -17,7 +17,7 @@
 using System.Text.Json.Serialization;
 using System.Text.Json;
 
-namespace SIPSorcery.OpenAI.WebRTC;
+namespace SIPSorcery.OpenAIWebRTC;
 
 public class JsonOptions
 {
@@ -38,16 +38,8 @@ public class JsonOptions
 
                     // Allows "true" and "false" strings to be deserialised to booleans.
                     new BooleanAsStringConverter(),
-
-                    // Newtonsoft allows numeric values to be deserialised from strings.
-                    // This is not the default behaviour in System.Text.Json so use a custom converter.
-                    //new NumericConverter<int>(),
-                    //new NumericConverter<long>(),
-                    //new NumericConverter<float>(),
-                    //new NumericConverter<double>(),
-                    //new NumericConverter<decimal>()
                 },
-            PropertyNamingPolicy = null // PacalCase by default.
+            PropertyNamingPolicy = null // PascalCase by default.
         };
     }
 }

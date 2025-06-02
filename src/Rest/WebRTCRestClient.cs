@@ -26,7 +26,7 @@ using LanguageExt.Common;
 using System.Threading;
 using System;
 
-namespace SIPSorcery.OpenAI.WebRTC;
+namespace SIPSorcery.OpenAIWebRTC;
 
 public class WebRTCRestClient : IWebRTCRestClient
 {

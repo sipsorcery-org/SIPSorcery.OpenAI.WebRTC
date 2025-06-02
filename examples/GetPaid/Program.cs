@@ -29,7 +29,7 @@ using SIPSorceryMedia.Windows;
 using Serilog.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using System.Collections.Generic;
-using SIPSorcery.OpenAI.WebRTC;
+using SIPSorcery.OpenAIWebRTC;
 using SIPSorceryMedia.Abstractions;
 using SIPSorcery.Media;
 

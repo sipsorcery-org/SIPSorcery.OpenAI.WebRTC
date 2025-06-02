@@ -22,7 +22,7 @@ using SIPSorceryMedia.Abstractions;
 using System;
 using System.Net.Http.Headers;
 
-namespace SIPSorcery.OpenAI.WebRTC;
+namespace SIPSorcery.OpenAIWebRTC;
 
 /// <summary>
 /// Extension methods to work with the OpenAI Realtime WebRTC end point.

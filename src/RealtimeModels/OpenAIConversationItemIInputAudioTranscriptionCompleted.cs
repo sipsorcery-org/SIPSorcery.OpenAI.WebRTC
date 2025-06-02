@@ -6,7 +6,7 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Threading.Tasks;
 
-namespace SIPSorcery.OpenAI.WebRTC;
+namespace SIPSorcery.OpenAIWebRTC;
 
 public class OpenAIConversationItemIInputAudioTranscriptionCompleted : OpenAIServerEventBase
 {

@@ -1,13 +1,13 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
-VisualStudioVersion = 17.14.36121.58 d17.14
+VisualStudioVersion = 17.14.36121.58
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SIPSorcery.OpenAI.WebRTC", "SIPSorcery.OpenAI.WebRTC.csproj", "{14C6482D-4071-8B1E-D3DF-7E660562C915}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SIPSorcery", "..\..\sipsorcery\src\SIPSorcery.csproj", "{76FF505E-253C-B75A-7385-7F313F829284}"
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "test", "test", "{02EA681E-C7D8-13C7-8484-4AC65E1B71E8}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SIPSorceryMedia.Abstractions", "..\..\SIPSorceryMedia.Abstractions\src\SIPSorceryMedia.Abstractions.csproj", "{6B131CA8-8388-4F9B-4E55-B35D137DFBAE}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SIPSorcery.OpenAI.WebRTC.UnitTests", "..\test\unit\SIPSorcery.OpenAI.WebRTC.UnitTests.csproj", "{9167C6A7-5E12-B1CA-5E8D-EF8A195C1826}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -19,17 +19,16 @@ Global
 		{14C6482D-4071-8B1E-D3DF-7E660562C915}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{14C6482D-4071-8B1E-D3DF-7E660562C915}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{14C6482D-4071-8B1E-D3DF-7E660562C915}.Release|Any CPU.Build.0 = Release|Any CPU
-		{76FF505E-253C-B75A-7385-7F313F829284}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{76FF505E-253C-B75A-7385-7F313F829284}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{76FF505E-253C-B75A-7385-7F313F829284}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{76FF505E-253C-B75A-7385-7F313F829284}.Release|Any CPU.Build.0 = Release|Any CPU
-		{6B131CA8-8388-4F9B-4E55-B35D137DFBAE}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{6B131CA8-8388-4F9B-4E55-B35D137DFBAE}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{6B131CA8-8388-4F9B-4E55-B35D137DFBAE}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{6B131CA8-8388-4F9B-4E55-B35D137DFBAE}.Release|Any CPU.Build.0 = Release|Any CPU
+		{9167C6A7-5E12-B1CA-5E8D-EF8A195C1826}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{9167C6A7-5E12-B1CA-5E8D-EF8A195C1826}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{9167C6A7-5E12-B1CA-5E8D-EF8A195C1826}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{9167C6A7-5E12-B1CA-5E8D-EF8A195C1826}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{9167C6A7-5E12-B1CA-5E8D-EF8A195C1826} = {02EA681E-C7D8-13C7-8484-4AC65E1B71E8}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {539DA97D-EBDD-461B-9E87-1085D6C96A1E}

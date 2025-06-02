@@ -18,7 +18,7 @@ using System.Collections.Concurrent;
 using System.Net.Http;
 using System.Net.Http.Headers;
 
-namespace SIPSorcery.OpenAI.WebRTC;
+namespace SIPSorcery.OpenAIWebRTC;
 
 public class HttpClientFactory : IHttpClientFactory
 {

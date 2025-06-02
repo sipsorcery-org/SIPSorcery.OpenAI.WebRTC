@@ -30,11 +30,10 @@
 using System;
 using System.Threading.Tasks;
 using Serilog;
-using SIPSorcery.Net;
 using SIPSorceryMedia.Windows;
 using Microsoft.Extensions.DependencyInjection;
 using Serilog.Extensions.Logging;
-using SIPSorcery.OpenAI.WebRTC;
+using SIPSorcery.OpenAIWebRTC;
 using SIPSorceryMedia.Abstractions;
 using SIPSorcery.Media;
 

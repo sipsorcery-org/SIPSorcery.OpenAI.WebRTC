@@ -25,7 +25,7 @@ using System.Linq;
 using System.Text;
 using System.Text.Json;
 
-namespace SIPSorcery.OpenAI.WebRTC;
+namespace SIPSorcery.OpenAIWebRTC;
 
 /// <summary>
 /// Facilitates sending OpenAI control messages (session updates, response requests, etc.) 

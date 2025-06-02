@@ -1,4 +1,4 @@
-﻿namespace SIPSorcery.OpenAI.WebRTC;
+﻿namespace SIPSorcery.OpenAIWebRTC;
 public enum OpenAIToolChoiceEnum
 {
     auto,

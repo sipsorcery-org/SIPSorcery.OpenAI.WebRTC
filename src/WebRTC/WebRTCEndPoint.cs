@@ -26,7 +26,7 @@ using Microsoft.Extensions.Logging.Abstractions;
 using SIPSorcery.Net;
 using SIPSorceryMedia.Abstractions;
 
-namespace SIPSorcery.OpenAI.WebRTC;
+namespace SIPSorcery.OpenAIWebRTC;
 
 public class WebRTCEndPoint : IWebRTCEndPoint, IDisposable
 {
