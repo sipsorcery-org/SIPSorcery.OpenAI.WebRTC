@@ -31,6 +31,7 @@ using Serilog.Extensions.Logging;
 using SIPSorcery.Net;
 using SIPSorceryMedia.Windows;
 using SIPSorcery.OpenAIWebRTC;
+using SIPSorcery.OpenAIWebRTC.Models;
 using SIPSorceryMedia.Abstractions;
 using SIPSorcery.Media;
 
@@ -114,8 +115,8 @@ class Program
             // Send RTP audio payloads receied from Bob to Alice.
             bobWebrtcEndPoint.PipeAudioTo(aliceWebrtcEndPoint);
 
-            bobWebrtcEndPoint.DataChannelMessenger.SendSessionUpdate(OpenAIVoicesEnum.ash);
-            aliceWebrtcEndPoint.DataChannelMessenger.SendResponseCreate(OpenAIVoicesEnum.shimmer, "Say Hi!");
+            bobWebrtcEndPoint.DataChannelMessenger.SendSessionUpdate(RealtimeVoicesEnum.ash);
+            aliceWebrtcEndPoint.DataChannelMessenger.SendResponseCreate(RealtimeVoicesEnum.shimmer, "Say Hi!");
         }
         else
         {

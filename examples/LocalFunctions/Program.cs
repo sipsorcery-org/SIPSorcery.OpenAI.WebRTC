@@ -31,6 +31,7 @@ using Serilog.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using System.Collections.Generic;
 using SIPSorcery.OpenAIWebRTC;
+using SIPSorcery.OpenAIWebRTC.Models;
 using SIPSorcery.Media;
 using SIPSorceryMedia.Abstractions;
 
@@ -82,7 +83,7 @@ class Program
             Log.Logger.Information("WebRTC peer connection established.");
 
             // Trigger the conversation by sending a response create message.
-            var result = webrtcEndPoint.DataChannelMessenger.SendResponseCreate(OpenAIVoicesEnum.shimmer, "Say Hi!");
+            var result = webrtcEndPoint.DataChannelMessenger.SendResponseCreate(RealtimeVoicesEnum.shimmer, "Say Hi!");
             if (result.IsLeft)
             {
                 Log.Logger.Error($"Failed to send response create message: {result.LeftAsEnumerable().First()}");
@@ -112,25 +113,25 @@ class Program
     /// <summary>
     /// Event handler for WebRTC data channel messages.
     /// </summary>
-    private static void OnDataChannelMessage(RTCDataChannel dc, OpenAIServerEventBase serverEvent)
+    private static void OnDataChannelMessage(RTCDataChannel dc, RealtimeEventBase serverEvent)
     {
         switch (serverEvent)
         {
-            case OpenAIResponseFunctionCallArgumentsDone argumentsDone:
-                logger.LogInformation($"Function Arguments done: {argumentsDone.ToJson()}\n{argumentsDone.ArgumentsToString()}");
+            case RealtimeServerEventResponseFunctionCallArgumentsDone argumentsDone:
+                logger.LogInformation($"Function Arguments done: {argumentsDone.ToJson()}\n{argumentsDone.Arguments}");
                 OnFunctionArgumentsDone(dc, argumentsDone);
                 break;
 
-            case OpenAISessionCreated sessionCreated:
+            case RealtimeServerEventSessionCreated sessionCreated:
                 logger.LogInformation($"Session created: {sessionCreated.ToJson()}");
                 OnSessionCreated(dc);
                 break;
 
-            case OpenAISessionUpdated sessionUpdated:
+            case RealtimeServerEventSessionUpdated sessionUpdated:
                 logger.LogInformation($"Session updated: {sessionUpdated.ToJson()}");
                 break;
 
-            case OpenAIResponseAudioTranscriptDone transcriptionDone:
+            case RealtimeServerEventResponseAudioTranscriptDone transcriptionDone:
                 logger.LogInformation($"Transcript done: {transcriptionDone.Transcript}");
                 break;
 
@@ -145,23 +146,23 @@ class Program
     /// </summary>
     private static void OnSessionCreated(RTCDataChannel dc)
     {
-        var sessionUpdate = new OpenAISessionUpdate
+        var sessionUpdate = new RealtimeClientEventSessionUpdate
         {
             EventID = Guid.NewGuid().ToString(),
-            Session = new OpenAISession
+            Session = new RealtimeSession
             {
                 Instructions = "You are a weather bot who favours brevity and accuracy.",
-                Tools = new List<OpenAITool>
+                Tools = new List<RealtimeTool>
                 {
-                     new OpenAITool
+                     new RealtimeTool
                     {
                         Name = "get_weather",
                         Description = "Get the current weather.",
-                        Parameters = new OpenAIToolParameters
+                        Parameters = new RealtimeToolParameters
                         {
-                           Properties = new Dictionary<string, OpenAIToolProperty>
+                           Properties = new Dictionary<string, RealtimeToolProperty>
                            {
-                                { "location", new OpenAIToolProperty { Type = "string" } }
+                                { "location", new RealtimeToolProperty { Type = "string" } }
                            },
                            Required = new List<string> { "location" }
                         }
@@ -176,7 +177,7 @@ class Program
         dc.send(sessionUpdate.ToJson());
     }
 
-    private static void OnFunctionArgumentsDone(RTCDataChannel dc, OpenAIResponseFunctionCallArgumentsDone argsDone)
+    private static void OnFunctionArgumentsDone(RTCDataChannel dc, RealtimeServerEventResponseFunctionCallArgumentsDone argsDone)
     {
         var result = argsDone.Name switch
         {
@@ -184,15 +185,15 @@ class Program
             _ => "Unknown Function."
         };
 
-        logger.LogInformation($"Call {argsDone.Name} with args {argsDone.ArgumentsToString()} result {result}.");
+        logger.LogInformation($"Call {argsDone.Name} with args {argsDone.Arguments} result {result}.");
 
-        var resultConvItem = new OpenAIConversationItemCreate
+        var resultConvItem = new RealtimeClientEventConversationItemCreate
         {
             EventID = Guid.NewGuid().ToString(),
-            Item = new OpenAIConversationItem
+            Item = new RealtimeConversationItem
             {
-                Type = OpenAIConversationConversationTypeEnum.function_call_output,
-                CallID = argsDone.CallID,
+                Type = RealtimeConversationItemTypeEnum.function_call_output,
+                CallID = argsDone.CallId,
                 Output = result
             }
         };
@@ -201,10 +202,10 @@ class Program
         dc.send(resultConvItem.ToJson());
 
         // Tell the AI to continue the conversation.
-        var responseCreate = new OpenAIResponseCreate
+        var responseCreate = new RealtimeClientEventResponseCreate
         {
             EventID = Guid.NewGuid().ToString(),
-            Response = new OpenAIResponseCreateResponse
+            Response = new RealtimeResponseCreateParams
             {
                 Instructions = "Please give me the answer.",
             }
@@ -216,7 +217,7 @@ class Program
     /// <summary>
     /// The local function to call and return the result to the AI to continue the conversation.
     /// </summary>
-    private static string GetWeather(OpenAIResponseFunctionCallArgumentsDone argsDone)
+    private static string GetWeather(RealtimeServerEventResponseFunctionCallArgumentsDone argsDone)
     {
         var location = argsDone.Arguments.GetNamedArgumentValue("location") ?? string.Empty;
 

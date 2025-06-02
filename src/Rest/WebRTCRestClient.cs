@@ -25,6 +25,7 @@ using System.Threading.Tasks;
 using LanguageExt.Common;
 using System.Threading;
 using System;
+using SIPSorcery.OpenAIWebRTC.Models;
 
 namespace SIPSorcery.OpenAIWebRTC;
 
@@ -32,8 +33,9 @@ public class WebRTCRestClient : IWebRTCRestClient
 {
     public const string OPENAI_HTTP_CLIENT_NAME = "openai";
 
+    public const RealtimeModelsEnum DEFAULT_REALTIME_MODEL = RealtimeModelsEnum.Gpt4oRealtimePreview;
+
     private const string OPENAI_REALTIME_BASE_URL = "https://api.openai.com/v1/realtime";
-    public const string OPENAI_REALTIME_DEFAULT_MODEL = "gpt-4o-realtime-preview-2024-12-17";
 
     private readonly IHttpClientFactory _factory;
 
@@ -46,20 +48,22 @@ public class WebRTCRestClient : IWebRTCRestClient
     /// Completes the steps required to get an ephemeral key from the OpenAI REST server. The ephemeral key is needed
     /// to send an SDP offer, and get the SDP answer.
     /// </summary>
-    /// <param name="model">Optional model to use for the request, defaults to <see cref="OPENAI_REALTIME_DEFAULT_MODEL"/>.</param>
+    /// <param name="model">Optional model to use for the request.</param>
     /// <param name="voice">The voice to request for the session.</param>
     /// <param name="ct">Cancellation token to allow the request to be cancelled.</param>
     /// <returns>Either a descriptive error if the request failed or a string representing the newly created ephemeral API key.</returns>
     public async Task<Either<Error, string>> CreateEphemeralKeyAsync(
-        string model = OPENAI_REALTIME_DEFAULT_MODEL,
-        OpenAIVoicesEnum voice = OpenAIVoicesEnum.shimmer,
+        RealtimeVoicesEnum voice = RealtimeVoicesEnum.shimmer,
+        RealtimeModelsEnum? model = null,
         CancellationToken ct = default)
     {
+        var useModel = model ?? DEFAULT_REALTIME_MODEL;
+
         var client = GetClient();
 
         using var req = new HttpRequestMessage(HttpMethod.Post, "/v1/realtime/sessions");
         req.Content = new StringContent(
-            JsonSerializer.Serialize(new { model, voice }, JsonOptions.Default),
+            JsonSerializer.Serialize(new { model = useModel.ToEnumString(), voice }, JsonOptions.Default),
             Encoding.UTF8,
             "application/json");
 
@@ -89,7 +93,7 @@ public class WebRTCRestClient : IWebRTCRestClient
     /// ICE candidates will be returned in the SDP answer and are publicly accessible IP's.
     /// </summary>
     /// <param name="offerSdp">The offer Session Description Protocol (SDP) payload to send to the OpenAI REST server.</param>
-    /// <param name="model">Optional model to use for the request, defaults to <see cref="OPENAI_REALTIME_DEFAULT_MODEL"/>.</param>
+    /// <param name="model">Optional model to use for the request.</param>
     /// <param name="ct">Cancellation token to allow the request to be cancelled.</param>
     /// <returns>Either a descriptive error if the request failed or a string representing the answer SDP from the OpenAI REST server.</returns>
     /// <remarks>
@@ -97,11 +101,12 @@ public class WebRTCRestClient : IWebRTCRestClient
     /// </remarks>
     public async Task<Either<Error, string>> GetSdpAnswerAsync(
         string offerSdp,
-        string model = OPENAI_REALTIME_DEFAULT_MODEL,
+        RealtimeModelsEnum? model,
         CancellationToken ct = default)
     {
+        var useModel = model ?? DEFAULT_REALTIME_MODEL;
         var client = GetClient();
-        var url = $"?model={Uri.EscapeDataString(model)}";
+        var url = $"?model={Uri.EscapeDataString(useModel.ToEnumString())}";
 
         using var req = new HttpRequestMessage(HttpMethod.Post, url);
         req.Content = new StringContent(offerSdp, Encoding.UTF8);

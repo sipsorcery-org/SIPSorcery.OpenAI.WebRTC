@@ -34,6 +34,7 @@ using SIPSorceryMedia.Windows;
 using Serilog.Extensions.Logging;
 using Microsoft.Extensions.Logging;
 using SIPSorcery.OpenAIWebRTC;
+using SIPSorcery.OpenAIWebRTC.Models;
 using SIPSorceryMedia.Abstractions;
 using SIPSorcery.Media;
 
@@ -67,7 +68,7 @@ class Program
 
         var webrtcEndPoint = new WebRTCEndPoint(openAiKey, logger);
 
-        // We'll send/receive audio directly from our Windows audio devices.
+        // Send/receive audio directly from Windows audio devices.
         var windowsAudioEp = InitialiseWindowsAudioEndPoint();
         webrtcEndPoint.ConnectAudioEndPoint(windowsAudioEp);
 
@@ -83,15 +84,21 @@ class Program
         {
             Log.Logger.Information("WebRTC peer connection established.");
 
+            var voice = RealtimeVoicesEnum.verse;
+
             // Optionally send a session update message to adjust the session parameters.
-            var sessionUpdateResult = webrtcEndPoint.DataChannelMessenger.SendSessionUpdate(OpenAIVoicesEnum.shimmer, true, "Keep it short.");
+            var sessionUpdateResult = webrtcEndPoint.DataChannelMessenger.SendSessionUpdate(
+                voice,
+                "Keep it short.",
+                transcriptionModel: TranscriptionModelEnum.Whisper1);
+
             if (sessionUpdateResult.IsLeft)
             {
                 Log.Logger.Error($"Failed to send rsession update message: {sessionUpdateResult.LeftAsEnumerable().First()}");
             }
 
             // Trigger the conversation by sending a response create message.
-            var result = webrtcEndPoint.DataChannelMessenger.SendResponseCreate(OpenAIVoicesEnum.shimmer, "Say Hi!");
+            var result = webrtcEndPoint.DataChannelMessenger.SendResponseCreate(voice, "Say Hi!");
             if (result.IsLeft)
             {
                 Log.Logger.Error($"Failed to send response create message: {result.LeftAsEnumerable().First()}");
@@ -102,12 +109,12 @@ class Program
         {
             var log = message switch
             {
-                OpenAISessionUpdated sessionUpdated => $"Session updated: {sessionUpdated.ToJson()}",
-                OpenAIConversationItemIInputAudioTranscriptionDelta inputDelta => $"ME ⌛: {inputDelta.Delta?.Trim()}",
-                OpenAIConversationItemIInputAudioTranscriptionCompleted inputTranscript => $"ME ✅: {inputTranscript.Transcript?.Trim()}",
-                OpenAIResponseAudioTranscriptDelta responseDelta => $"AI ⌛: {responseDelta.Delta?.Trim()}",
-                OpenAIResponseAudioTranscriptDone responseTranscript => $"AI ✅: {responseTranscript.Transcript?.Trim()}",
-                _ => string.Empty //$"Received {message.GetType().Name}"
+                RealtimeServerEventSessionUpdated sessionUpdated => $"Session updated: {sessionUpdated.ToJson()}",
+                RealtimeServerEventConversationItemInputAudioTranscriptionDelta inputDelta => $"ME ⌛: {inputDelta.Delta?.Trim()}",
+                RealtimeServerEventConversationItemInputAudioTranscriptionCompleted inputTranscript => $"ME ✅: {inputTranscript.Transcript?.Trim()}",
+                RealtimeServerEventResponseAudioTranscriptDelta responseDelta => $"AI ⌛: {responseDelta.Delta?.Trim()}",
+                RealtimeServerEventResponseAudioTranscriptDone responseTranscript => $"AI ✅: {responseTranscript.Transcript?.Trim()}",
+                _ => $"Received {message.Type} -> {message.GetType().Name}"
             };
 
             if (log != string.Empty)

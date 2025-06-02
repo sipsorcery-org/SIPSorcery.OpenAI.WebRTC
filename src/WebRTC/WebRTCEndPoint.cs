@@ -16,21 +16,21 @@
 // BDS BY-NC-SA restriction, see included LICENSE.md file.
 //-----------------------------------------------------------------------------
 
-using System;
-using System.Linq;
-using System.Threading.Tasks;
 using LanguageExt;
 using LanguageExt.Common;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using SIPSorcery.Net;
+using SIPSorcery.OpenAIWebRTC.Models;
 using SIPSorceryMedia.Abstractions;
+using System;
+using System.Linq;
+using System.Threading.Tasks;
 
 namespace SIPSorcery.OpenAIWebRTC;
 
 public class WebRTCEndPoint : IWebRTCEndPoint, IDisposable
 {
-    public const string OPENAI_DEFAULT_MODEL = "gpt-4o-realtime-preview-2024-12-17";
     public const string OPENAI_DATACHANNEL_NAME = "oai-events";
 
     private ILogger _logger = NullLogger.Instance;
@@ -60,7 +60,7 @@ public class WebRTCEndPoint : IWebRTCEndPoint, IDisposable
     /// <summary>
     /// Raised whenever a parsed OpenAI server event arrives on the data channel.
     /// </summary>
-    public event Action<RTCDataChannel, OpenAIServerEventBase>? OnDataChannelMessage;
+    public event Action<RTCDataChannel, RealtimeEventBase>? OnDataChannelMessage;
 
     /// <summary>
     /// Preferred constructor for dependency injection.
@@ -97,7 +97,7 @@ public class WebRTCEndPoint : IWebRTCEndPoint, IDisposable
         DataChannelMessenger = new DataChannelMessenger(this, logger);
     }
 
-    public async Task<Either<Error, Unit>> StartConnect(RTCConfiguration? pcConfig = null, string? model = null)
+    public async Task<Either<Error, Unit>> StartConnect(RTCConfiguration? pcConfig = null, RealtimeModelsEnum? model = null)
     {
         if (PeerConnection != null)
         {
@@ -107,12 +107,10 @@ public class WebRTCEndPoint : IWebRTCEndPoint, IDisposable
         var pc = CreatePeerConnection(pcConfig);
         PeerConnection =  Option<RTCPeerConnection>.Some(pc);
 
-        var useModel = string.IsNullOrWhiteSpace(model) ? OPENAI_DEFAULT_MODEL : model;
-
         var offer = pc.createOffer();
         await pc.setLocalDescription(offer).ConfigureAwait(false);
 
-        var sdpAnswerResult = await _openAIRealtimeRestClient.GetSdpAnswerAsync(offer.sdp, useModel).ConfigureAwait(false);
+        var sdpAnswerResult = await _openAIRealtimeRestClient.GetSdpAnswerAsync(offer.sdp, model).ConfigureAwait(false);
 
         return sdpAnswerResult.Map(sdpAnswer =>
         {
@@ -190,7 +188,7 @@ public class WebRTCEndPoint : IWebRTCEndPoint, IDisposable
         );
     }
 
-    public void SendDataChannelMessage(OpenAIServerEventBase message)
+    public void SendDataChannelMessage(RealtimeEventBase message)
     {
         PeerConnection.Match(
             pc =>
@@ -211,7 +209,7 @@ public class WebRTCEndPoint : IWebRTCEndPoint, IDisposable
         );
     }
 
-    internal void InvokeOnDataChannelMessage(RTCDataChannel dc, OpenAIServerEventBase message)
+    internal void InvokeOnDataChannelMessage(RTCDataChannel dc, RealtimeEventBase message)
         => OnDataChannelMessage?.Invoke(dc, message);
 
     /// <summary>
