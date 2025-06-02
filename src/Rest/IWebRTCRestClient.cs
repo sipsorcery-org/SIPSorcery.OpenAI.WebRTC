@@ -18,6 +18,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using LanguageExt;
 using LanguageExt.Common;
+using SIPSorcery.OpenAIWebRTC.Models;
 
 namespace SIPSorcery.OpenAIWebRTC;
 
@@ -25,7 +26,7 @@ public interface IWebRTCRestClient
 {
     Task<Either<Error, string>> CreateEphemeralKeyAsync(
         string model = WebRTCRestClient.OPENAI_REALTIME_DEFAULT_MODEL,
-        OpenAIVoicesEnum voice = OpenAIVoicesEnum.shimmer,
+        RealtimeVoicesEnum voice = RealtimeVoicesEnum.shimmer,
         CancellationToken ct = default);
 
     Task<Either<Error, string>> GetSdpAnswerAsync(

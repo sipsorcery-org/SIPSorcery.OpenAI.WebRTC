@@ -14,12 +14,13 @@
 // BDS BY-NC-SA restriction, see included LICENSE.md file.
 //-----------------------------------------------------------------------------
 
-using System;
-using System.Threading.Tasks;
 using LanguageExt;
 using LanguageExt.Common;
 using SIPSorcery.Net;
+using SIPSorcery.OpenAIWebRTC.Models;
 using SIPSorceryMedia.Abstractions;
+using System;
+using System.Threading.Tasks;
 
 namespace SIPSorcery.OpenAIWebRTC;
 
@@ -64,7 +65,7 @@ public interface IWebRTCEndPoint
     /// <summary>
     /// Raised whenever a parsed OpenAI server event arrives on the data channel.
     /// </summary>
-    event Action<RTCDataChannel, OpenAIServerEventBase>? OnDataChannelMessage;
+    event Action<RTCDataChannel, RealtimeEventBase>? OnDataChannelMessage;
 
     /// <summary>
     /// Initiates connection negotiation with the OpenAI service.
@@ -83,7 +84,7 @@ public interface IWebRTCEndPoint
     /// <summary>
     /// Sends a control message across the data channel.
     /// </summary>
-    void SendDataChannelMessage(OpenAIServerEventBase message);
+    void SendDataChannelMessage(RealtimeEventBase message);
 
     /// <summary>
     /// Closes the peer connection and releases resources.

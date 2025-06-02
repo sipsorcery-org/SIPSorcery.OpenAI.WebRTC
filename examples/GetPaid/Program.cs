@@ -30,6 +30,7 @@ using Serilog.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using System.Collections.Generic;
 using SIPSorcery.OpenAIWebRTC;
+using SIPSorcery.OpenAIWebRTC.Models;
 using SIPSorceryMedia.Abstractions;
 using SIPSorcery.Media;
 
@@ -81,7 +82,7 @@ class Program
             Log.Logger.Information("WebRTC peer connection established.");
 
             // Trigger the conversation by sending a response create message.
-            var result = webrtcEndPoint.DataChannelMessenger.SendResponseCreate(OpenAIVoicesEnum.shimmer, "Say Hi!");
+            var result = webrtcEndPoint.DataChannelMessenger.SendResponseCreate(RealtimeVoicesEnum.shimmer, "Say Hi!");
             if (result.IsLeft)
             {
                 Log.Logger.Error($"Failed to send response create message: {result.LeftAsEnumerable().First()}");
@@ -111,25 +112,25 @@ class Program
     /// <summary>
     /// Event handler for WebRTC data channel messages.
     /// </summary>
-    private static void OnDataChannelMessage(RTCDataChannel dc, OpenAIServerEventBase serverEvent)
+    private static void OnDataChannelMessage(RTCDataChannel dc, RealtimeEventBase serverEvent)
     {
         switch (serverEvent)
         {
-            case OpenAIResponseFunctionCallArgumentsDone argumentsDone:
-                logger.LogInformation($"Function Arguments done: {argumentsDone.ToJson()}\n{argumentsDone.ArgumentsToString()}");
+            case RealtimeServerEventResponseFunctionCallArgumentsDone argumentsDone:
+                logger.LogInformation($"Function Arguments done: {argumentsDone.ToJson()}\n{argumentsDone.Arguments}");
                 OnFunctionArgumentsDone(dc, argumentsDone);
                 break;
 
-            case OpenAISessionCreated sessionCreated:
+            case RealtimeServerEventSessionCreated sessionCreated:
                 logger.LogInformation($"Session created: {sessionCreated.ToJson()}");
                 OnSessionCreated(dc);
                 break;
 
-            case OpenAISessionUpdated sessionUpdated:
+            case RealtimeServerEventSessionUpdated sessionUpdated:
                 logger.LogInformation($"Session updated: {sessionUpdated.ToJson()}");
                 break;
 
-            case OpenAIResponseAudioTranscriptDone transcriptionDone:
+            case RealtimeServerEventResponseAudioTranscriptDone transcriptionDone:
                 logger.LogInformation($"Transcript done: {transcriptionDone.Transcript}");
                 break;
 
@@ -144,24 +145,24 @@ class Program
     /// </summary>
     private static void OnSessionCreated(RTCDataChannel dc)
     {
-        var sessionUpdate = new OpenAISessionUpdate
+        var sessionUpdate = new RealtimeClientEventSessionUpdate
         {
             EventID = Guid.NewGuid().ToString(),
-            Session = new OpenAISession
+            Session = new RealtimeSession
             {
                 Instructions = "You are an assistant for sales agents that assists in generating payment requests and favours brevity and accuracy.",
-                Tools = new List<OpenAITool>
+                Tools = new List<RealtimeTool>
                 {
-                    new OpenAITool
+                    new RealtimeTool
                     {
                         Name = "create_payment_request",
                         Description = "Creates a payment request.",
-                        Parameters = new OpenAIToolParameters
+                        Parameters = new RealtimeToolParameters
                         {
-                           Properties = new Dictionary<string, OpenAIToolProperty>
+                           Properties = new Dictionary<string, RealtimeToolProperty>
                            {
-                                { "amount", new OpenAIToolProperty { Type = "number" } },
-                                { "currency", new OpenAIToolProperty { Type = "string" } }
+                                { "amount", new RealtimeToolProperty { Type = "number" } },
+                                { "currency", new RealtimeToolProperty { Type = "string" } }
                            },
                            Required = new List<string> { "amount", "currency" }
                         }
@@ -176,24 +177,24 @@ class Program
         dc.send(sessionUpdate.ToJson());
     }
 
-    private static void OnFunctionArgumentsDone(RTCDataChannel dc, OpenAIResponseFunctionCallArgumentsDone argsDone)
+    private static void OnFunctionArgumentsDone(RTCDataChannel dc, RealtimeServerEventResponseFunctionCallArgumentsDone argsDone)
     {
         var result = argsDone.Name switch
         {
             "create_payment_request" => $"Processing create payment request.",
             _ => "Unknown Function."
         };
-        logger.LogInformation($"Call {argsDone.Name} with args {argsDone.ArgumentsToString()} result {result}.");
+        logger.LogInformation($"Call {argsDone.CallId} with args {argsDone.Arguments} result {result}.");
 
         var createPyamentRequestResult = CreatePaymentRequest(argsDone);
         logger.LogDebug(createPyamentRequestResult.ToJson());
         dc.send(createPyamentRequestResult.ToJson());
 
         // Tell the AI to continue the conversation.
-        var responseCreate = new OpenAIResponseCreate
+        var responseCreate = new RealtimeClientEventResponseCreate
         {
             EventID = Guid.NewGuid().ToString(),
-            Response = new OpenAIResponseCreateResponse
+            Response = new RealtimeResponseCreateParams
             {
                 Instructions = "Please give me the answer.",
             }
@@ -205,17 +206,17 @@ class Program
     /// <summary>
     /// The local function to call and return the result to the AI to continue the conversation.
     /// </summary>
-    private static OpenAIConversationItemCreate CreatePaymentRequest(OpenAIResponseFunctionCallArgumentsDone argsDone)
+    private static RealtimeClientEventConversationItemCreate CreatePaymentRequest(RealtimeServerEventResponseFunctionCallArgumentsDone argsDone)
     {
         string orderID = "X1234";
 
-        return new OpenAIConversationItemCreate
+        return new RealtimeClientEventConversationItemCreate
         {
             EventID = Guid.NewGuid().ToString(),
-            Item = new OpenAIConversationItem
+            Item = new RealtimeConversationItem
             {
-                Type = OpenAIConversationConversationTypeEnum.function_call_output,
-                CallID = argsDone.CallID,
+                Type = RealtimeConversationItemTypeEnum.function_call_output,
+                CallID = argsDone.CallId,
                 Output = $"New payment request order ID is {orderID}"
             }
         };

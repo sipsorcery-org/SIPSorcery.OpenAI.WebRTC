@@ -25,6 +25,7 @@ using System.Threading.Tasks;
 using LanguageExt.Common;
 using System.Threading;
 using System;
+using SIPSorcery.OpenAIWebRTC.Models;
 
 namespace SIPSorcery.OpenAIWebRTC;
 
@@ -33,7 +34,7 @@ public class WebRTCRestClient : IWebRTCRestClient
     public const string OPENAI_HTTP_CLIENT_NAME = "openai";
 
     private const string OPENAI_REALTIME_BASE_URL = "https://api.openai.com/v1/realtime";
-    public const string OPENAI_REALTIME_DEFAULT_MODEL = "gpt-4o-realtime-preview-2024-12-17";
+    public const string OPENAI_REALTIME_DEFAULT_MODEL = "gpt-4o-realtime-preview"; // "gpt-4o-realtime-preview-2024-12-17";
 
     private readonly IHttpClientFactory _factory;
 
@@ -52,7 +53,7 @@ public class WebRTCRestClient : IWebRTCRestClient
     /// <returns>Either a descriptive error if the request failed or a string representing the newly created ephemeral API key.</returns>
     public async Task<Either<Error, string>> CreateEphemeralKeyAsync(
         string model = OPENAI_REALTIME_DEFAULT_MODEL,
-        OpenAIVoicesEnum voice = OpenAIVoicesEnum.shimmer,
+        RealtimeVoicesEnum voice = RealtimeVoicesEnum.shimmer,
         CancellationToken ct = default)
     {
         var client = GetClient();

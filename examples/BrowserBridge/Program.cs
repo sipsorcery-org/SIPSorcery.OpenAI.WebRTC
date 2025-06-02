@@ -35,6 +35,7 @@ using Serilog;
 using Serilog.Extensions.Logging;
 using SIPSorcery.Net;
 using SIPSorcery.OpenAIWebRTC;
+using SIPSorcery.OpenAIWebRTC.Models;
 using SIPSorceryMedia.Abstractions;
 using System;
 using System.Threading.Tasks;
@@ -134,7 +135,7 @@ class Program
             Log.Logger.Information("WebRTC peer connection established.");
 
             // Trigger the conversation by sending a response create message.
-            var result = webrtcEndPoint.DataChannelMessenger.SendResponseCreate(OpenAIVoicesEnum.shimmer, "Say Hi!");
+            var result = webrtcEndPoint.DataChannelMessenger.SendResponseCreate(RealtimeVoicesEnum.shimmer, "Say Hi!");
             if (result.IsLeft)
             {
                 Log.Logger.Error($"Failed to send response create message: {result.LeftAsEnumerable().First()}");
@@ -143,7 +144,7 @@ class Program
 
         webrtcEndPoint.OnDataChannelMessage += (dc, message) =>
         {
-            if (message is OpenAIResponseAudioTranscriptDone done)
+            if (message is RealtimeServerEventResponseAudioTranscriptDone done)
             {
                 Log.Information($"Transcript done: {done.Transcript}");
             }
