@@ -21,7 +21,7 @@ using LanguageExt.Common;
 using SIPSorcery.Net;
 using SIPSorceryMedia.Abstractions;
 
-namespace SIPSorcery.OpenAI.WebRTC;
+namespace SIPSorcery.OpenAIWebRTC;
 
 /// <summary>
 /// Contract for a WebRTC endpoint that communicates with the OpenAI real‑time

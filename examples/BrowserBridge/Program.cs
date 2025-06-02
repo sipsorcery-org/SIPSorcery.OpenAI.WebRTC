@@ -34,7 +34,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Serilog;
 using Serilog.Extensions.Logging;
 using SIPSorcery.Net;
-using SIPSorcery.OpenAI.WebRTC;
+using SIPSorcery.OpenAIWebRTC;
 using SIPSorceryMedia.Abstractions;
 using System;
 using System.Threading.Tasks;

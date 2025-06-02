@@ -19,7 +19,7 @@ using System.Threading.Tasks;
 using LanguageExt;
 using LanguageExt.Common;
 
-namespace SIPSorcery.OpenAI.WebRTC;
+namespace SIPSorcery.OpenAIWebRTC;
 
 public interface IWebRTCRestClient
 {

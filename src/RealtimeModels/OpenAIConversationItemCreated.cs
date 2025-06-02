@@ -3,7 +3,7 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
-namespace SIPSorcery.OpenAI.WebRTC;
+namespace SIPSorcery.OpenAIWebRTC;
 public class OpenAIConversationItemCreated : OpenAIServerEventBase
 {
     public const string TypeName = "conversation.item.created";

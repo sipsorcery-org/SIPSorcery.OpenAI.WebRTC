@@ -19,7 +19,7 @@ using System.Text.Json.Serialization;
 using System.Text.Json;
 using System;
 
-namespace SIPSorcery.OpenAI.WebRTC;
+namespace SIPSorcery.OpenAIWebRTC;
 
 public class BooleanAsStringConverter : JsonConverter<bool>
 {
