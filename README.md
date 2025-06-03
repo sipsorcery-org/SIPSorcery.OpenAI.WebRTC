@@ -1,16 +1,14 @@
 # .NET Library for OpenAI WebRTC End Point
 
-This repository contains a .NET library for interacting with [OpenAI's real-time WebRTC API](https://platform.openai.com/docs/guides/realtime-webrtc). It provides helper classes to negotiate peer connections, send and receive Opus audio frames and exchange control messages over a data channel.
+This repository contains a .NET library for interacting with [OpenAI's real-time WebRTC API](https://platform.openai.com/docs/guides/realtime-webrtc). It provides helper classes to negotiate peer connections, send and receive OPUS audio frames and exchange control messages over a data channel.
 
 ## Features
 
-- Establish a `RTCPeerConnection` with OpenAI using a REST based signalling helper.
+- Establish a `RTCPeerConnection` (WebRTC) with OpenAI using a REST based signalling helper.
 - Send audio samples or pipe them from existing SIPSorcery media end points.
-- Receive audio and transcript events via the data channel.
+- Receive transcript and other events via the data channel.
 - `DataChannelMessenger` class to assist with sending session updates, function call results and response prompts.
-- Designed to work with dependency injection or standalone instances.
-
-The solution files are located under `src/` and `examples/`.
+- Designed to work with dependency injection (ASP.NET) or standalone alone applications (Console & WinForms).
 
 ## Installation
 
@@ -24,7 +22,7 @@ dotnet add package SIPSorcery.OpenAI.WebRTC
 
 ### Console/WinForms Direct WebRTC Connection to OpenAI Realtime End Point
 
-See GetStarted example for full source.
+See [GetStarted](https://github.com/sipsorcery-org/SIPSorcery.OpenAI.WebRTC/tree/main/examples/GetStarted) example for full source.
 
 ```csharp
 using SIPSorcery.OpenAIWebRTC;
@@ -88,16 +86,26 @@ webrtcEndPoint.OnDataChannelMessage += (dc, message) =>
 
 ```
 
+Example Output:
+
+```
+[20:45:29 INF] AI ✅: Hello! How can I assist you today?
+[20:45:40 INF] ME ✅: Tell me a nursery rhyme and use as many emojis as you can in the transcription.
+[20:45:44 INF] AI ✅: 🍼🎶 Humpty Dumpty sat on a wall, 🥚⬆️🌉 Humpty Dumpty had a great fall. 🥚💥⤵️ All the king's horses 🐎👑 and all the king's men 👨‍✈️👑 couldn't put Humpty together again! 🥚❌⚒️🐣
+[20:46:06 INF] AI ✅: You're welcome! 😊 Anytime!
+[20:46:06 INF] ME ✅: Thank you.
+```
+
 ### ASP.NET WebRTC Bridge: Browser <- ASP.NET Bridge -> OpenAI Realtime End Point
 
-See BrowserBridge example for full source.
+See [BrowserBridge](https://github.com/sipsorcery-org/SIPSorcery.OpenAI.WebRTC/tree/main/examples/BrowserBridge) example for full source.
 
 ```csharp
 using SIPSorcery.OpenAIWebRTC;
 using SIPSorcery.OpenAIWebRTC.Models;
 
 // Set up an ASP.NET web socket to listen for connections.
-// The web socket is NOT used for the connection to OpenAI. It's a covenience signalling channel to allow the browser
+// The web socket is NOT used for the connection to OpenAI. It's a convenience signalling channel to allow the browser
 // to establish a WebRTC connection with the ASP.NET app.
 
 app.Map("/ws", async (HttpContext context,
@@ -165,4 +173,4 @@ Each example folder contains its own README with usage instructions.
 
 ## License
 
-Distributed under the BSD 3‑Clause license with an additional BDS BY‑NC‑SA restriction. See [LICENSE.md](LICENSE.md) for details.
+Distributed under the BSD 3‑Clause license with an additional BDS BY‑NC‑SA restriction. See [LICENSE.md](https://github.com/sipsorcery-org/SIPSorcery.OpenAI.WebRTC/tree/LICENSE.md) for details.
