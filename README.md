@@ -173,4 +173,4 @@ Each example folder contains its own README with usage instructions.
 
 ## License
 
-Distributed under the BSD 3‑Clause license with an additional BDS BY‑NC‑SA restriction. See [LICENSE.md](https://github.com/sipsorcery-org/SIPSorcery.OpenAI.WebRTC/tree/LICENSE.md) for details.
+Distributed under the BSD 3‑Clause license with an additional BDS BY‑NC‑SA restriction. See [LICENSE.md](https://github.com/sipsorcery-org/SIPSorcery.OpenAI.WebRTC/tree/main/LICENSE.md) for details.
