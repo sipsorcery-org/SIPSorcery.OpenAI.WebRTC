@@ -1,4 +1,4 @@
-# SIPSorcery.OpenAI.WebRTC
+# .NET Library for OpenAI WebRTC End Point
 
 This repository contains a .NET library for interacting with [OpenAI's real-time WebRTC API](https://platform.openai.com/docs/guides/realtime-webrtc). It provides helper classes to negotiate peer connections, send and receive Opus audio frames and exchange control messages over a data channel.
 
