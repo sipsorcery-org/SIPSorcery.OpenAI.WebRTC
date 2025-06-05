@@ -84,7 +84,7 @@ class Program
         {
             Log.Logger.Information("WebRTC peer connection established.");
 
-            var voice = RealtimeVoicesEnum.verse;
+            var voice = RealtimeVoicesEnum.shimmer;
 
             // Optionally send a session update message to adjust the session parameters.
             var sessionUpdateResult = webrtcEndPoint.DataChannelMessenger.SendSessionUpdate(

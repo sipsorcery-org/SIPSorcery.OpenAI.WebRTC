@@ -1,5 +1,4 @@
-﻿using System.ComponentModel;
-using System.Runtime.Serialization;
+﻿using System.Runtime.Serialization;
 
 namespace SIPSorcery.OpenAIWebRTC;
 
@@ -18,5 +17,8 @@ public enum RealtimeModelsEnum
     Gpt4oMiniRealtimePreview,
 
     [EnumMember(Value = "gpt-4o-mini-realtime-preview-2024-12-17")]
-    Gpt4oMiniRealtimePreview_2024_12_17
+    Gpt4oMiniRealtimePreview_2024_12_17,
+
+    [EnumMember(Value = "gpt-4o-realtime-preview-2025-06-03")] 
+    Gpt4oRealtimePreview_2025_06_03
 }

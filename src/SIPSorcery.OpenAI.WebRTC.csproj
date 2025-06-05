@@ -37,14 +37,15 @@
     <RepositoryType>git</RepositoryType>
     <RepositoryBranch>main</RepositoryBranch>
     <PackageTags>OpenAI WebRTC SIPSorcery Real-time</PackageTags>
-    <PackageReleaseNotes>-v8.0.3: Stable release.
+    <PackageReleaseNotes>-v8.0.4: Added gpt-4o-realtime-preview-2025-06-03 model option.
+-v8.0.3: Stable release.
 -v8.0.2-pre: Synchronised realtime models with OpenAI spec.
 -v8.0.1-pre: Initial version.
 </PackageReleaseNotes>
     <NeutralLanguage>en</NeutralLanguage>
-    <Version>8.0.3</Version>
-    <AssemblyVersion>8.0.3</AssemblyVersion>
-    <FileVersion>8.0.3</FileVersion>
+    <Version>8.0.4</Version>
+    <AssemblyVersion>8.0.4</AssemblyVersion>
+    <FileVersion>8.0.4</FileVersion>
   </PropertyGroup>
 
   <PropertyGroup Label="SourceLink">
