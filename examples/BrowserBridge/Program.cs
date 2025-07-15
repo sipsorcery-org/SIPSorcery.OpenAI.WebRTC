@@ -38,12 +38,16 @@ using SIPSorcery.OpenAIWebRTC;
 using SIPSorcery.OpenAIWebRTC.Models;
 using SIPSorceryMedia.Abstractions;
 using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 
 namespace demo;
 
 class Program
 {
+    private static string? _stunUrl = string.Empty;
+    private static string? _turnUrl = string.Empty;
+
     static async Task Main(string[] args)
     {
         Log.Logger = new LoggerConfiguration()
@@ -58,6 +62,9 @@ class Program
         Log.Information("WebRTC OpenAI Browser Bridge Demo Program");
 
         var openAiKey = Environment.GetEnvironmentVariable("OPENAI_API_KEY") ?? string.Empty;
+        _stunUrl = Environment.GetEnvironmentVariable("STUN_URL");
+        _turnUrl = Environment.GetEnvironmentVariable("TURN_URL");
+        bool.TryParse(Environment.GetEnvironmentVariable("WAIT_FOR_ICE_GATHERING_TO_SEND_OFFER"), out var waitForIceGatheringToSendOffer);
 
         if (string.IsNullOrWhiteSpace(openAiKey))
         {
@@ -106,6 +113,11 @@ class Program
                     CreateBrowserPeerConnection,
                     config,
                     RTCSdpType.offer);
+
+                webSocketPeer.OfferOptions = new RTCOfferOptions
+                {
+                    X_WaitForIceGatheringToComplete = waitForIceGatheringToSendOffer
+                };
 
                 var browserPeerTask = webSocketPeer.Run();
 
@@ -183,11 +195,39 @@ class Program
     /// </summary>
     private static Task<RTCPeerConnection> CreateBrowserPeerConnection(RTCConfiguration pcConfig)
     {
+        pcConfig.iceServers = new List<RTCIceServer>();
+
+        if (!string.IsNullOrWhiteSpace(_stunUrl))
+        {
+            pcConfig.iceServers.Add(_stunUrl.ParseStunServer());
+        }
+
+        if (!string.IsNullOrWhiteSpace(_turnUrl))
+        {
+            pcConfig.iceServers.Add(_turnUrl.ParseStunServer());
+        }
+
         var peerConnection = new RTCPeerConnection(pcConfig);
 
         MediaStreamTrack audioTrack = new MediaStreamTrack(AudioCommonlyUsedFormats.OpusWebRTC, MediaStreamStatusEnum.SendRecv);
         peerConnection.addTrack(audioTrack);
 
         return Task.FromResult(peerConnection);
+    }
+}
+
+public static class StunServerExtensions
+{
+    public static RTCIceServer ParseStunServer(this string stunServer)
+    {
+        var fields = stunServer.Split(';');
+
+        return new RTCIceServer
+        {
+            urls = fields[0],
+            username = fields.Length > 1 ? fields[1] : null,
+            credential = fields.Length > 2 ? fields[2] : null,
+            credentialType = RTCIceCredentialType.password
+        };
     }
 }
