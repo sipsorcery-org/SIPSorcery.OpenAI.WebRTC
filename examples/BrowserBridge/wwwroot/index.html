@@ -1,5 +1,77 @@
 ﻿<!DOCTYPE html>
 <head>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: Arial, sans-serif;
+            background: #f9f9f9;
+        }
+        .container {
+            max-width: 600px;
+            margin: 2rem auto;
+            padding: 1rem;
+            background: #fff;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        audio {
+            width: 100%;
+            max-width: 500px;
+            margin-bottom: 1.5rem;
+        }
+        .controls {
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+        }
+        .controls input[type="text"] {
+            width: 100%;
+            padding: 0.5rem;
+            font-size: 1rem;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+        .controls button {
+            padding: 0.75rem;
+            font-size: 1rem;
+            border: none;
+            border-radius: 5px;
+            background: #4CAF50; /* Modern green */
+            color: #fff;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        .controls button:hover:enabled {
+            background: #388E3C; /* Slightly darker green for hover */
+        }
+        .controls button.close-btn {
+            background: #F44336; /* Modern red */
+            color: #fff;
+        }
+        .controls button.close-btn:hover:enabled {
+            background: #C62828; /* Slightly darker red for hover */
+        }
+        .controls button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+        @media (max-width: 600px) {
+            .container {
+                margin: 0;
+                border-radius: 0;
+                box-shadow: none;
+            }
+            audio {
+                max-width: 100%;
+            }
+        }
+    </style>
     <script type="text/javascript">
         const WEBSOCKET_URL = "ws://127.0.0.1:8080/ws"
         const STUN_URL = "stun:stun.cloudflare.com";
@@ -17,6 +89,8 @@
         }
 
         async function start() {
+            document.getElementById('startBtn').disabled = true;
+            document.getElementById('closeBtn').disabled = false;
             pc = new RTCPeerConnection({
                 iceServers: [
                     {
@@ -34,11 +108,11 @@
             });
 
             pc.ontrack = evt => {
-                console.log("Adding track to video control.");
-                document.querySelector('#videoCtl').srcObject = evt.streams[0];
+                console.log("Adding track to audio control.");
+                document.querySelector('#audioCtl').srcObject = evt.streams[0];
 
                 evt.streams[0].onunmute = () => {
-                    console.log("Adding track to video control.");
+                    console.log("Adding track to audio control.");
                 };
 
                 evt.streams[0].onended = () => {
@@ -78,6 +152,8 @@
         };
 
         async function closePeer() {
+            document.getElementById('startBtn').disabled = false;
+            document.getElementById('closeBtn').disabled = true;
             await pc?.close();
             await ws?.close();
 
@@ -90,15 +166,14 @@
     </script>
 </head>
 <body>
-
-    <video controls autoplay="autoplay" id="videoCtl" width="640" height="480"></video>
-
-    <div>
-        <input type="text" id="websockurl" size="40" />
-        <button type="button" class="btn btn-success" onclick="start();">Start</button>
-        <button type="button" class="btn btn-success" onclick="closePeer();">Close</button>
+    <div class="container">
+        <audio controls autoplay id="audioCtl"></audio>
+        <div class="controls">
+            <input type="text" id="websockurl" size="40" />
+            <button type="button" class="btn btn-success" id="startBtn" onclick="start();">Start</button>
+            <button type="button" class="btn close-btn" id="closeBtn" onclick="closePeer();" disabled>Close</button>
+        </div>
     </div>
-
 </body>
 
 <script>
