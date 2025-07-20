@@ -47,7 +47,7 @@ COPY [".", "."]
 
 # Publish the application
 FROM build AS publish
-RUN dotnet publish "./BrowserBridge.csproj" -c $BUILD_CONFIGURATION -o /app/publish
+RUN dotnet publish "./AspNetGetStarted.csproj" -c $BUILD_CONFIGURATION -o /app/publish
 
 # Stage 4: Final Image to Run the App
 FROM base AS final

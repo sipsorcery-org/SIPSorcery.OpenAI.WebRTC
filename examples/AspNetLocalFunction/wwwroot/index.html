@@ -9,7 +9,7 @@
             background: #f9f9f9;
         }
         .container {
-            max-width: 600px;
+            max-width: 900px;
             margin: 2rem auto;
             padding: 1rem;
             background: #fff;
@@ -76,6 +76,86 @@
             overflow-y: auto;
             font-family: monospace;
             box-sizing: border-box;
+            display: none; /* Hidden by default */
+        }
+        .diagnostics-panel.visible {
+            display: block;
+        }
+        .diagnostics-toggle-btn {
+            margin-top: 1rem;
+            background: #888;
+            color: #fff;
+            border: none;
+            border-radius: 5px;
+            padding: 0.5rem 1.5rem;
+            font-size: 1rem;
+            cursor: pointer;
+        }
+        .diagnostics-toggle-link {
+            margin-top: 1rem;
+            display: inline-block;
+            color: #007bff;
+            background: none;
+            border: none;
+            padding: 0;
+            font-size: 1rem;
+            text-decoration: underline;
+            cursor: pointer;
+        }
+        .diagnostics-toggle-link:visited {
+            color: #007bff;
+        }
+        .datachannel-panel {
+            width: 100%;
+            min-height: 120px;
+            max-height: 320px;
+            margin-top: 0.5rem;
+            background: #181f2a;
+            color: #fff;
+            font-size: 1rem;
+            border-radius: 6px;
+            padding: 0.75rem 1rem;
+            overflow-y: auto;
+            font-family: monospace;
+            box-sizing: border-box;
+            border: none;
+        }
+        .datachannel-status-row {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-top: 1.5rem;
+        }
+        .datachannel-status-label {
+            font-weight: bold;
+            color: #222;
+            background: #eaeaea;
+            border-radius: 4px;
+            padding: 0.2rem 0.6rem;
+            font-size: 1rem;
+        }
+        .datachannel-status-circle {
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            display: inline-block;
+            background: #dc3545; /* default to red */
+            box-shadow: 0 0 4px #0002;
+            transition: background 0.3s;
+        }
+        .datachannel-status-circle.open {
+            background: #28a745;
+        }
+        .datachannel-status-circle.closed {
+            background: #dc3545;
+        }
+        .hidden {
+            display: none !important;
+        }
+        @media (min-width: 1200px) {
+            .container {
+                max-width: 1200px;
+            }
         }
         @media (max-width: 600px) {
             .container {
@@ -136,6 +216,9 @@
         async function start() {
             logDiag('Start button clicked. Attempting to start peer connection.');
             setButtonStates(false, true);
+            // Show data channel status and panel
+            document.getElementById('dataChannelStatusRow')?.classList.remove('hidden');
+            document.getElementById('dataChannelPanel')?.classList.remove('hidden');
             try {
                 pc = new RTCPeerConnection({
                     iceServers: [
@@ -175,6 +258,57 @@
 
                 pc.onclose = () => {
                     logDiag('Peer connection closed.');
+                };
+
+                // Add handler for data channel messages
+                pc.ondatachannel = function(event) {
+                    const dataChannel = event.channel;
+                    logDiag('Data channel created: ' + dataChannel.label);
+                    const dcPanel = document.getElementById('dataChannelPanel');
+                    const dcStatus = document.getElementById('dataChannelStatusCircle');
+                    if (dcPanel) {
+                        dcPanel.innerHTML = '';
+                    }
+                    if (dcStatus) {
+                        dcStatus.classList.remove('open', 'closed');
+                        dcStatus.classList.add('closed');
+                    }
+                    dataChannel.onmessage = function(e) {
+                        if (dcPanel) {
+                            const entry = document.createElement('div');
+                            entry.textContent = `[${new Date().toLocaleTimeString()}] ${e.data}`;
+                            if (dcPanel.firstChild) {
+                                dcPanel.insertBefore(entry, dcPanel.firstChild);
+                            } else {
+                                dcPanel.appendChild(entry);
+                            }
+                        }
+                        logDiag('Data channel message: ' + e.data);
+                    };
+                    dataChannel.onopen = function() {
+                        logDiag('Data channel opened: ' + dataChannel.label);
+                        if (dcStatus) {
+                            dcStatus.classList.remove('closed');
+                            dcStatus.classList.add('open');
+                        }
+                        if (dcPanel) {
+                            const entry = document.createElement('div');
+                            entry.textContent = `[${new Date().toLocaleTimeString()}] Data channel opened.`;
+                            dcPanel.insertBefore(entry, dcPanel.firstChild);
+                        }
+                    };
+                    dataChannel.onclose = function() {
+                        logDiag('Data channel closed: ' + dataChannel.label);
+                        if (dcStatus) {
+                            dcStatus.classList.remove('open');
+                            dcStatus.classList.add('closed');
+                        }
+                        if (dcPanel) {
+                            const entry = document.createElement('div');
+                            entry.textContent = `[${new Date().toLocaleTimeString()}] Data channel closed.`;
+                            dcPanel.insertBefore(entry, dcPanel.firstChild);
+                        }
+                    };
                 };
 
                 const wsUrl = document.querySelector('#websockurl').value;
@@ -218,6 +352,13 @@
             logDiag('Close button clicked. Closing peer connection and WebSocket.');
             setButtonStates(true, false);
             try {
+                // Remove audio tracks from the peer connection
+                if (pc && localStream) {
+                    localStream.getAudioTracks().forEach(track => {
+                        const senders = pc.getSenders().filter(sender => sender.track === track);
+                        senders.forEach(sender => pc.removeTrack(sender));
+                    });
+                }
                 await pc?.close();
                 await ws?.close();
                 logDiag('Peer connection and WebSocket closed.');
@@ -231,6 +372,20 @@
                 logDiag('Local audio tracks stopped.');
             }
         };
+
+        function toggleDiagnosticsPanel(event) {
+            if (event) event.preventDefault();
+            const panel = document.getElementById('diagnosticsPanel');
+            const link = document.getElementById('toggleDiagnosticsLink');
+            if (!panel || !link) return;
+            if (panel.classList.contains('visible')) {
+                panel.classList.remove('visible');
+                link.textContent = 'Show Diagnostics';
+            } else {
+                panel.classList.add('visible');
+                link.textContent = 'Hide Diagnostics';
+            }
+        }
     </script>
 </head>
 <body>
@@ -243,6 +398,12 @@
                 <button type="button" class="btn close-btn" id="closeBtn" onclick="closePeer();" disabled>Close</button>
             </div>
         </div>
+        <div class="datachannel-status-row hidden" id="dataChannelStatusRow">
+            <span class="datachannel-status-label">Data Channel</span>
+            <span id="dataChannelStatusCircle" class="datachannel-status-circle closed"></span>
+        </div>
+        <div id="dataChannelPanel" class="datachannel-panel closed hidden"></div>
+        <a id="toggleDiagnosticsLink" class="diagnostics-toggle-link" href="#" onclick="toggleDiagnosticsPanel(event);">Show Diagnostics</a>
         <div id="diagnosticsPanel" class="diagnostics-panel"></div>
     </div>
 </body>

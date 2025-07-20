@@ -41,6 +41,7 @@ using SIPSorcery.OpenAIWebRTC.Models;
 using SIPSorceryMedia.Abstractions;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 
 namespace demo;
@@ -121,12 +122,13 @@ class Program
                     X_WaitForIceGatheringToComplete = waitForIceGatheringToSendOffer
                 };
 
-                var browserPeerTask = webSocketPeer.Run();
+                await webSocketPeer.Run();
 
-                SetOpenAIPeerEventHandlers(openAiWebRTCEndPoint);
+                SetOpenAIPeerEventHandlers(openAiWebRTCEndPoint, webSocketPeer.RTCPeerConnection.DataChannels.First());
+
                 var openAiPeerTask = openAiWebRTCEndPoint.StartConnect(config);
 
-                await Task.WhenAll(browserPeerTask, openAiPeerTask);
+                await openAiPeerTask;
 
                 ConnectPeers(webSocketPeer.RTCPeerConnection, openAiWebRTCEndPoint);
 
@@ -142,11 +144,13 @@ class Program
         await app.RunAsync();
     }
 
-    private static void SetOpenAIPeerEventHandlers(IWebRTCEndPoint webrtcEndPoint)
+    private static void SetOpenAIPeerEventHandlers(IWebRTCEndPoint webrtcEndPoint, RTCDataChannel browserDataChannel)
     {
         webrtcEndPoint.OnPeerConnectionConnected += () =>
         {
-            Log.Logger.Information("WebRTC peer connection established.");
+            Log.Logger.Information("OpenAI WebRTC peer connection established.");
+
+            browserDataChannel.send("WebRTC connection established with OpenAI.");
 
             // Trigger the conversation by sending a response create message.
             var result = webrtcEndPoint.DataChannelMessenger.SendResponseCreate(RealtimeVoicesEnum.shimmer, "Say Hi!");
@@ -164,7 +168,7 @@ class Program
         //    }
         //};
 
-        webrtcEndPoint.OnDataChannelMessage += OnDataChannelMessage;
+        webrtcEndPoint.OnDataChannelMessage += (dc, evt) => OnDataChannelMessage(dc, evt, browserDataChannel);
     }
 
     private static void ConnectPeers(RTCPeerConnection browserPc, IWebRTCEndPoint openAiEndPoint)
@@ -216,13 +220,16 @@ class Program
         MediaStreamTrack audioTrack = new MediaStreamTrack(AudioCommonlyUsedFormats.OpusWebRTC, MediaStreamStatusEnum.SendRecv);
         peerConnection.addTrack(audioTrack);
 
+        // This call is synchronous when the WebRTC connection is not yet connected.
+        _ = peerConnection.createDataChannel("browser").Result;
+
         return Task.FromResult(peerConnection);
     }
 
     /// <summary>
     /// Event handler for WebRTC data channel messages.
     /// </summary>
-    private static void OnDataChannelMessage(RTCDataChannel dc, RealtimeEventBase serverEvent)
+    private static void OnDataChannelMessage(RTCDataChannel dc, RealtimeEventBase serverEvent, RTCDataChannel browserDataChannel)
     {
         switch (serverEvent)
         {
@@ -242,6 +249,7 @@ class Program
 
             case RealtimeServerEventResponseAudioTranscriptDone transcriptionDone:
                 Log.Information($"Transcript done: {transcriptionDone.Transcript}");
+                browserDataChannel.send($"AI: {transcriptionDone.Transcript?.Trim()}");
                 break;
 
             default:
