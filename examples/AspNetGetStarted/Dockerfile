@@ -76,4 +76,4 @@ RUN ldconfig
 ENV PATH="/usr/local/bin:${PATH}"
 
 # Set entrypoint to run the .NET application
-ENTRYPOINT ["dotnet", "BrowserBridge.dll"]
+ENTRYPOINT ["dotnet", "AspNetGetStarted.dll"]

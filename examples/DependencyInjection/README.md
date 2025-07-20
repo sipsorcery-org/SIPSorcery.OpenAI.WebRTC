@@ -1,4 +1,4 @@
-# ASP.NET OpenAI WebRTC Get STarted Example
+# OpenAI WebRTC Get Started Example using Dependency Injection
 
 This example demonstrates how to set up and run a basic WebRTC application that interacts with OpenAI's [Real-time WebRTC API](https://platform.openai.com/docs/guides/realtime-webrtc). This version is designed for ASP.NET Core and Dependency Injection (DI) environments, using `HttpClientFactory` and DI-compliant service wiring.
 

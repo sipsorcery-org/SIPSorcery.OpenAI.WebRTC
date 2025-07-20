@@ -1,7 +1,7 @@
 ﻿//-----------------------------------------------------------------------------
 // Filename: Program.cs
 //
-// Description: An example WebRTC application that can be used to act as a bridge
+// Description: An example ASP.NET WebRTC application that can be used to act as a bridge
 // between a browser based WebRTC peer and OpenAI's real-time API
 // https://platform.openai.com/docs/guides/realtime-webrtc.
 //
@@ -59,7 +59,7 @@ class Program
         var factory = new SerilogLoggerFactory(Log.Logger);
         SIPSorcery.LogFactory.Set(factory);
 
-        Log.Information("WebRTC OpenAI Browser Bridge Demo Program");
+        Log.Information("WebRTC OpenAI ASP.NET Demo Program");
 
         var openAiKey = Environment.GetEnvironmentVariable("OPENAI_API_KEY") ?? string.Empty;
         _stunUrl = Environment.GetEnvironmentVariable("STUN_URL");

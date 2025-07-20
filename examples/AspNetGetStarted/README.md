@@ -1,4 +1,4 @@
-# WebRTC OpenAI Browser Bridge Demo
+# WebRTC OpenAI ASP.NET Demo
 
 ## Overview
 
@@ -26,6 +26,7 @@ Set the following environment variables before running the application:
 |----------------------------------------------|--------------------------------------------------------------------------------------------------|
 | `OPENAI_API_KEY`                             | **Required.** Your OpenAI API key for generating ephemeral session secrets.                      |
 | `STUN_URL`                                   | **Optional.** A STUN server URL (e.g., `stun:stun.l.google.com:19302`) to help establish ICE.    |
+| `TURN_URL`                                   | **Optional.** A TURN server URL (e.g., `turn:yourcoturn.com:3478;user;password`) to relay RTP packets.    |
 | `WAIT_FOR_ICE_GATHERING_TO_SEND_OFFER`       | **Optional.** `true` or `false`. If `true`, the server will wait for ICE gathering to complete before sending the SDP offer to the client. Default: `false`.
 
 Example (Windows PowerShell):
@@ -33,6 +34,7 @@ Example (Windows PowerShell):
 ```powershell
 $Env:OPENAI_API_KEY = "sk-..."
 $Env:STUN_URL = "stun:stun.l.google.com:19302"
+$Env:TURN_URL = "turn:yourcoturn.com:3478;user;password"
 $Env:WAIT_FOR_ICE_GATHERING_TO_SEND_OFFER = "true"
 ```
 
@@ -47,9 +49,11 @@ cd demo-webrtc-openai
 
 2. Build and run the application:
 
-```bash
-export OPENAI_API_KEY="<your_openai_key>"
-export STUN_URL="stun:stun.l.google.com:19302"
+```powershell
+$Env:OPENAI_API_KEY = "sk-..."
+$Env:STUN_URL = "stun:stun.l.google.com:19302"
+$Env:TURN_URL = "turn:yourcoturn.com:3478;user;password"
+$Env:WAIT_FOR_ICE_GATHERING_TO_SEND_OFFER = "true"
 dotnet run
 ```
 
