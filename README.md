@@ -167,7 +167,8 @@ Several sample applications demonstrating different scenarios are available in t
 - **LocalFunctions** – showcases the local function calling feature.
 - **GetPaid** – extends local functions to simulate payment requests.
 - **DependencyInjection** – illustrates using the library with .NET DI.
-- **BrowserBridge** – ASP.NET Core application bridging a browser WebRTC client to OpenAI.
+- **ASP.NET Get Started** – ASP.NET application bridging a browser WebRTC client to OpenAI.
+- **ASP.NET Local Function** – ASP.NET application that builds on the Get Started example and adds a local function to tailor OpenAI responses.
 
 Each example folder contains its own README with usage instructions.
 
