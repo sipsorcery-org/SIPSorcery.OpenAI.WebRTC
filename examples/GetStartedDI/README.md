@@ -1,6 +1,6 @@
 # OpenAI WebRTC Get Started Example using Dependency Injection
 
-This example demonstrates how to set up and run a basic WebRTC application that interacts with OpenAI's [Real-time WebRTC API](https://platform.openai.com/docs/guides/realtime-webrtc). This version is designed for ASP.NET Core and Dependency Injection (DI) environments, using `HttpClientFactory` and DI-compliant service wiring.
+This example demonstrates how to set up and run a basic WebRTC application that interacts with OpenAI's [Real-time WebRTC API](https://platform.openai.com/docs/guides/realtime-webrtc). This version is demonstrates using a Dependency Injection (DI) environment, using `HttpClientFactory` and DI-compliant service wiring.
 
 > ⚠️ **Note:** This demo does not include echo cancellation. If your Windows audio device doesn't provide echo cancellation, ChatGPT may end up talking to itself. To avoid this, use a headset.
 

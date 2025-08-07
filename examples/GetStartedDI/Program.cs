@@ -3,6 +3,8 @@
 //
 // Description: An example WebRTC application that can be used to interact with
 // OpenAI's real-time API https://platform.openai.com/docs/guides/realtime-webrtc.
+// This example is very similar to the GetStarted example but instead of instantiating
+// the WebRTCEndPoint directly it uses the DI container to create it.
 //
 // NOTE: As of 10 May 2025 this example does work to establish an audio stream and is
 // able to receive data channel messages. There is no echo cancellation feature in this
@@ -18,7 +20,7 @@
 // 
 // History:
 // 19 Dec 2024	Aaron Clauson	Created, Dublin, Ireland.
-// 17 Jan 2025  Aaron Clauson   Added create resposne data channel message to trigger conversation start.
+// 17 Jan 2025  Aaron Clauson   Added create response data channel message to trigger conversation start.
 // 10 May 2025  Aaron Clauson   Big refactor of the OpenAI.Realtime library to use HttpClientFactory.
 // 27 May 2025  Aaron Clauson   Moved from SIPSorcery main repo to SIPSorcery.OpenAI.WebRTC repo.
 //
