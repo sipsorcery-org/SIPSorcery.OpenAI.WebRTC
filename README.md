@@ -166,7 +166,7 @@ Several sample applications demonstrating different scenarios are available in t
 - **AliceAndBob** – runs two OpenAI peers and routes their audio between each other with a waveform display.
 - **LocalFunctions** – showcases the local function calling feature.
 - **GetPaid** – extends local functions to simulate payment requests.
-- **DependencyInjection** – illustrates using the library with .NET DI.
+- **GetStartedDI** – illustrates using the library with .NET Dependency Injection.
 - **ASP.NET Get Started** – ASP.NET application bridging a browser WebRTC client to OpenAI.
 - **ASP.NET Local Function** – ASP.NET application that builds on the Get Started example and adds a local function to tailor OpenAI responses.
 
