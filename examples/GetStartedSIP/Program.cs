@@ -238,7 +238,7 @@ class Program
 
             if (sessionUpdateResult.IsLeft)
             {
-                Log.Logger.Error($"Failed to send rsession update message: {sessionUpdateResult.LeftAsEnumerable().First()}");
+                Log.Logger.Error($"Failed to send session update message: {sessionUpdateResult.LeftAsEnumerable().First()}");
             }
 
             // Trigger the conversation by sending a response create message.
