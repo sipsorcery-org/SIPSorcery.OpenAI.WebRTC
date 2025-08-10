@@ -42,7 +42,7 @@ dotnet run
 ```
 
 3. **Test with a SIP call**:
-   - Use any SIP client (like (microSIP)[https://www.microsip.org/] or a hardware SIP phone)
+   - Use any SIP client (like [microSIP](https://www.microsip.org/) or a hardware SIP phone)
    - Call: `sip:test@{your_computer_ip}:5060`
    - Start speaking once the call connects
 
