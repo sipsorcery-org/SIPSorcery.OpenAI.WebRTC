@@ -95,11 +95,11 @@ public static class WebRTCServiceCollectionExtensions
 
     /// <summary>
     /// Connects an RTPSession to a WebRTC end point. The standard use case is to connect the audio packets from an RTP session established by a SIP call
-    /// to an OpenAI We.
+    /// to an OpenAI WebRTC endpoint.
     /// </summary>
     /// <param name="webRTCEndPoint">The WebRTC end point to connect.</param>
     /// <param name="rtpSession">The RTPSession to connect.</param>
-    /// <param name="audioFormat">THe audio format being used for both audio streams.</param>
+    /// <param name="audioFormat">The audio format being used for both audio streams.</param>
     public static void ConnectRTPSession(this IWebRTCEndPoint webRTCEndPoint, RTPSession rtpSession, AudioFormat audioFormat)
     {
         rtpSession.OnAudioFrameReceived += (frame) => SendAudioToWebRTCEndPoint(frame, webRTCEndPoint, audioFormat);
