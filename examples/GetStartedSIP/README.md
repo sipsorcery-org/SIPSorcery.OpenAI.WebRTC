@@ -79,7 +79,7 @@ The demo uses these default settings:
 ## Testing
 
 ### Local Testing
-1. Install a softphone like ((microSIP)[https://www.microsip.org/])
+1. Install a softphone like [microSIP](https://www.microsip.org/)
 2. Configure it to call `sip:test@127.0.0.1:5060`
 3. Make the call and start speaking
 
