@@ -61,7 +61,7 @@ public static class WebRTCServiceCollectionExtensions
     }
 
     /// <summary>
-    /// Connects an audio endpoint to a WebRTC end point. The standard use case is to connect the audio from the OpeNAI end point
+    /// Connects an audio endpoint to a WebRTC end point. The standard use case is to connect the audio from the OpenAI end point
     /// to local audio devices (speakers and/or microphone).
     /// </summary>
     /// <param name="webRTCEndPoint">The WebRTC end point to connect.</param>
@@ -91,6 +91,43 @@ public static class WebRTCServiceCollectionExtensions
             webRTCEndPoint.OnAudioFrameReceived -= audioEndPoint.GotEncodedMediaFrame;
             await audioEndPoint.Close();
         };
+    }
+
+    /// <summary>
+    /// Connects an RTPSession to a WebRTC end point. The standard use case is to connect the audio packets from an RTP session established by a SIP call
+    /// to an OpenAI We.
+    /// </summary>
+    /// <param name="webRTCEndPoint">The WebRTC end point to connect.</param>
+    /// <param name="rtpSession">The RTPSession to connect.</param>
+    /// <param name="audioFormat">THe audio format being used for both audio streams.</param>
+    public static void ConnectRTPSession(this IWebRTCEndPoint webRTCEndPoint, RTPSession rtpSession, AudioFormat audioFormat)
+    {
+        rtpSession.OnAudioFrameReceived += (frame) => SendAudioToWebRTCEndPoint(frame, webRTCEndPoint, audioFormat);
+        webRTCEndPoint.OnAudioFrameReceived += (frame) => SendAudioToRTPSession(frame, rtpSession, audioFormat);
+
+        webRTCEndPoint.OnPeerConnectionFailed += () =>
+        {
+            rtpSession.OnAudioFrameReceived -= (frame) => SendAudioToWebRTCEndPoint(frame, webRTCEndPoint, audioFormat);
+            webRTCEndPoint.OnAudioFrameReceived -= (frame) => SendAudioToRTPSession(frame, rtpSession, audioFormat);
+        };
+
+        webRTCEndPoint.OnPeerConnectionClosed += () =>
+        {
+            rtpSession.OnAudioFrameReceived -= (frame) => SendAudioToWebRTCEndPoint(frame, webRTCEndPoint, audioFormat);
+            webRTCEndPoint.OnAudioFrameReceived -= (frame) => SendAudioToRTPSession(frame, rtpSession, audioFormat);
+        };
+    }
+
+    private static void SendAudioToWebRTCEndPoint(EncodedAudioFrame frame, IWebRTCEndPoint webRTCEndPoint, AudioFormat audioFormat)
+    {
+        webRTCEndPoint.SendAudio(
+            RtpTimestampExtensions.ToRtpUnits(frame.DurationMilliSeconds, audioFormat.RtpClockRate), frame.EncodedAudio);
+    }
+
+    private static void SendAudioToRTPSession(EncodedAudioFrame frame, RTPSession rtpSession, AudioFormat audioFormat)
+    {
+        rtpSession.SendAudio(
+             RtpTimestampExtensions.ToRtpUnits(frame.DurationMilliSeconds, audioFormat.RtpClockRate), frame.EncodedAudio);
     }
 
     /// <summary>
