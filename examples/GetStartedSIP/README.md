@@ -1,4 +1,4 @@
-# OpenAI WebRTC SIP Gateway Example
+﻿# OpenAI WebRTC SIP Gateway Example
 
 This example demonstrates how to create a SIP-to-OpenAI WebRTC gateway that receives incoming SIP calls and bridges the audio to OpenAI's real-time API. The caller can have a voice conversation with OpenAI through their SIP client or phone.
 
@@ -12,12 +12,12 @@ This example demonstrates how to create a SIP-to-OpenAI WebRTC gateway that rece
 
 ## How it Works
 
-1. The application starts a SIP user agent listening on UDP port 5060
+1. The application starts a SIP server listening on UDP port 5060
 2. When a SIP call is received, it's automatically answered
 3. A WebRTC connection is established with OpenAI's real-time endpoint
 4. Audio is bridged bidirectionally:
-   - Caller's voice ? OpenAI (for processing and response generation)
-   - OpenAI's response ? Caller (through the SIP call)
+   - Caller's voice → OpenAI (for processing and response generation)
+   - OpenAI's response → Caller (through the SIP call)
 5. Conversation transcripts are logged to the console
 6. When the caller hangs up, connections are properly cleaned up
 
@@ -42,7 +42,7 @@ dotnet run
 ```
 
 3. **Test with a SIP call**:
-   - Use any SIP client (like X-Lite, Zoiper, or a hardware SIP phone)
+   - Use any SIP client (like (microSIP)[https://www.microsip.org/] or a hardware SIP phone)
    - Call: `sip:test@{your_computer_ip}:5060`
    - Start speaking once the call connects
 
@@ -79,7 +79,7 @@ The demo uses these default settings:
 ## Testing
 
 ### Local Testing
-1. Install a softphone like [X-Lite](https://www.counterpath.com/x-lite/) or [Zoiper](https://www.zoiper.com/)
+1. Install a softphone like ((microSIP)[https://www.microsip.org/])
 2. Configure it to call `sip:test@127.0.0.1:5060`
 3. Make the call and start speaking
 
@@ -90,16 +90,9 @@ The demo uses these default settings:
 
 ## Limitations
 
-- Currently supports audio-only calls (no video)
-- Uses default audio codecs supported by SIPSorcery
+- THe only supported auido codec is Opus.
 - No authentication or call routing (accepts all incoming calls)
 - Designed for demonstration purposes
-
-## Architecture
-
-```
-[SIP Client] ?? [SIP User Agent] ?? [VoIP Media Session] ?? [Audio Bridge] ?? [WebRTC EndPoint] ?? [OpenAI API]
-```
 
 ## License
 
