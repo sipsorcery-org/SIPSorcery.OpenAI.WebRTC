@@ -42,7 +42,7 @@ dotnet run
 ```
 
 3. **Test with a SIP call**:
-   - Use any SIP client (like (microSIP)[https://www.microsip.org/] or a hardware SIP phone)
+   - Use any SIP client (like [microSIP](https://www.microsip.org/) or a hardware SIP phone)
    - Call: `sip:test@{your_computer_ip}:5060`
    - Start speaking once the call connects
 
@@ -79,7 +79,7 @@ The demo uses these default settings:
 ## Testing
 
 ### Local Testing
-1. Install a softphone like ((microSIP)[https://www.microsip.org/])
+1. Install a softphone like [microSIP](https://www.microsip.org/)
 2. Configure it to call `sip:test@127.0.0.1:5060`
 3. Make the call and start speaking
 
@@ -90,7 +90,7 @@ The demo uses these default settings:
 
 ## Limitations
 
-- THe only supported auido codec is Opus.
+- The only supported audio codec is Opus.
 - No authentication or call routing (accepts all incoming calls)
 - Designed for demonstration purposes
 
