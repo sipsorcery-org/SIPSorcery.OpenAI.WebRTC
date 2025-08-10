@@ -90,7 +90,7 @@ The demo uses these default settings:
 
 ## Limitations
 
-- THe only supported auido codec is Opus.
+- The only supported audio codec is Opus.
 - No authentication or call routing (accepts all incoming calls)
 - Designed for demonstration purposes
 
