@@ -167,6 +167,7 @@ Several sample applications demonstrating different scenarios are available in t
 - **LocalFunctions** – showcases the local function calling feature.
 - **GetPaid** – extends local functions to simulate payment requests.
 - **GetStartedDI** – illustrates using the library with .NET Dependency Injection.
+- **GetStartedSIP** – demonstrates how to create a SIP-to-OpenAI WebRTC gateway that receives SIP (VoIP) calls and bridges to OpenAI.
 - **ASP.NET Get Started** – ASP.NET application bridging a browser WebRTC client to OpenAI.
 - **ASP.NET Local Function** – ASP.NET application that builds on the Get Started example and adds a local function to tailor OpenAI responses.
 
