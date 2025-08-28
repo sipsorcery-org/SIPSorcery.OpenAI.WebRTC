@@ -25,7 +25,7 @@ This software **must not be used** to further the Apartheid policies of Israel. 
 * Arab-Palestinian citizens of Israel have been granted full equality; and
 * Palestinian refugees have obtained the right to return to their homes and properties as stipulated in UN Resolution 194.
 
-For all other geographic regions **outside** of Israel and the Occupied Territories, use, modification, and distribution are permitted under the terms of the **BSD 3-Clause "New" or "Revised" License** above (Section 1), provided that any future use, modification, or distribution carries the above BDS restriction and abides by the ShareAlike and NonCommercial principles.
+For all other geographic regions **outside** of Israel and the Occupied Territories, use, modification, and distribution are permitted under the terms of the **BSD 3-Clause "New" or "Revised" License** above (Section 1), provided that any future use, modification, or distribution carries the above BDS restriction.
 
 This restriction is **not** intended to limit the rights of Israelis or any other people residing outside of Israel and the Occupied Territories.
 
