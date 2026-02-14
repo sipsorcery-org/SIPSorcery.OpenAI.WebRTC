@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net8.0</TargetFramework>
+    <TargetFramework>net10.0</TargetFramework>
     <LangVersion>12.0</LangVersion>
     <Nullable>enable</Nullable>
     <SuppressTfmSupportBuildWarnings>true</SuppressTfmSupportBuildWarnings>
@@ -14,7 +14,7 @@
     <PackageReference Include="LanguageExt.Core" Version="4.4.9" />
     <PackageReference Include="Microsoft.Extensions.Logging" Version="9.0.0" />
     <PackageReference Include="Microsoft.Extensions.Http" Version="9.0.0" />
-    <PackageReference Include="SIPSorcery" Version="8.0.22" />
+    <PackageReference Include="SIPSorcery" Version="10.0.4-pre" />
   </ItemGroup>
 
   <PropertyGroup>
@@ -43,9 +43,9 @@
 -v8.0.1-pre: Initial version.
 </PackageReleaseNotes>
     <NeutralLanguage>en</NeutralLanguage>
-    <Version>8.0.4</Version>
-    <AssemblyVersion>8.0.4</AssemblyVersion>
-    <FileVersion>8.0.4</FileVersion>
+    <Version>10.0.1-pre</Version>
+    <AssemblyVersion>10.0.1</AssemblyVersion>
+    <FileVersion>10.0.1</FileVersion>
   </PropertyGroup>
 
   <PropertyGroup Label="SourceLink">
