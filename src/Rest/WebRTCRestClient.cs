@@ -33,7 +33,7 @@ public class WebRTCRestClient : IWebRTCRestClient
 {
     public const string OPENAI_HTTP_CLIENT_NAME = "openai";
 
-    public const RealtimeModelsEnum DEFAULT_REALTIME_MODEL = RealtimeModelsEnum.Gpt4oRealtimePreview_2025_06_03;
+    public const RealtimeModelsEnum DEFAULT_REALTIME_MODEL = RealtimeModelsEnum.GptRealtime;
 
     private const string OPENAI_REALTIME_BASE_URL = "https://api.openai.com/v1/realtime";
 
