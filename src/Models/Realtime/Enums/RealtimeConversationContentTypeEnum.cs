@@ -10,5 +10,7 @@ public enum RealtimeConversationContentTypeEnum
 
     text,
 
-    audio
+    audio,
+
+    output_audio
 }

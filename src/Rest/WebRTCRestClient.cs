@@ -106,7 +106,8 @@ public class WebRTCRestClient : IWebRTCRestClient
     {
         var useModel = model ?? DEFAULT_REALTIME_MODEL;
         var client = GetClient();
-        var url = $"?model={Uri.EscapeDataString(useModel.ToEnumString())}";
+        //var url = $"?model={Uri.EscapeDataString(useModel.ToEnumString())}";
+        var url = $"/v1/realtime/calls?model={Uri.EscapeDataString(useModel.ToEnumString())}";
 
         using var req = new HttpRequestMessage(HttpMethod.Post, url);
         req.Content = new StringContent(offerSdp, Encoding.UTF8);
