@@ -206,7 +206,7 @@ class Program
     private static async Task CreateOpenAIWebRTCSession(ILoggerFactory loggerFactory, string openAiKey, string sipCallID, RTPSession rtpSession)
     {
         var logger = loggerFactory.CreateLogger<WebRTCEndPoint>();
-        var webrtcEndPoint = new WebRTCEndPoint(openAiKey, logger);
+        var webrtcEndPoint = new WebRTCEndPoint(openAiKey, loggerFactory);
 
         if (_calls.TryGetValue(sipCallID, out var existing))
         {

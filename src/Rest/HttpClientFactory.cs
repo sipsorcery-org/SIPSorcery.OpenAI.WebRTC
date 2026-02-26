@@ -14,6 +14,8 @@
 // BDS BY-NC-SA restriction, see included LICENSE.md file.
 //-----------------------------------------------------------------------------
 
+using Microsoft.Extensions.Logging;
+using System;
 using System.Collections.Concurrent;
 using System.Net.Http;
 using System.Net.Http.Headers;
@@ -23,19 +25,33 @@ namespace SIPSorcery.OpenAIWebRTC;
 public class HttpClientFactory : IHttpClientFactory
 {
     private readonly string _openAiKey;
+    private readonly ILoggerFactory? _loggerFactory;
     private readonly ConcurrentDictionary<string, HttpClient> _clients
         = new ConcurrentDictionary<string, HttpClient>();
 
-    public HttpClientFactory(string openAiKey)
+    public HttpClientFactory(string openAiKey, ILoggerFactory? loggerFactory = null)
     {
         _openAiKey = openAiKey;
+        _loggerFactory = loggerFactory;
     }
 
     public HttpClient CreateClient(string name)
     {
         return _clients.GetOrAdd(name, _ =>
         {
-            var client = new HttpClient();
+            HttpClient? client = null;
+
+            if (_loggerFactory == null)
+            {
+                client = new HttpClient();
+            }
+            else
+            {
+                var handler = new HttpClientHandler();
+                var logger = _loggerFactory.CreateLogger<HttpLoggingHandler>();
+                var loggingHandler = new HttpLoggingHandler(logger) { InnerHandler = handler };
+                client =  new HttpClient(loggingHandler);                  
+            }
 
             client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", _openAiKey);
 

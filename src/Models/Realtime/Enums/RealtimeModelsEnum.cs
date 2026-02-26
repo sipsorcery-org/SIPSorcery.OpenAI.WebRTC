@@ -20,5 +20,9 @@ public enum RealtimeModelsEnum
     Gpt4oMiniRealtimePreview_2024_12_17,
 
     [EnumMember(Value = "gpt-4o-realtime-preview-2025-06-03")] 
-    Gpt4oRealtimePreview_2025_06_03
+    Gpt4oRealtimePreview_2025_06_03,
+
+    // Added 23 Feb 2026 and replaces the previous preview models.
+    [EnumMember(Value = "gpt-realtime")]
+    GptRealtime
 }

@@ -83,18 +83,15 @@ public class WebRTCEndPoint : IWebRTCEndPoint, IDisposable
     /// Constructor for use when not using dependency injection.
     /// </summary>
     /// <param name="openAiKey">The OpenAI bearer token API key.</param>
-    /// <param name="logger">Optional logger to use for the end point.</param>
-    public WebRTCEndPoint(string openAiKey, ILogger? logger = null)
+    /// <param name="loggerFactory">Logger factory to use for the end point.</param>
+    public WebRTCEndPoint(string openAiKey, ILoggerFactory loggerFactory)
     {
-        var openAIHttpClientFactory = new HttpClientFactory(openAiKey);
+        var openAIHttpClientFactory = new HttpClientFactory(openAiKey, loggerFactory);
         _openAIRealtimeRestClient = new WebRTCRestClient(openAIHttpClientFactory);
 
-        if (logger != null)
-        {
-            _logger = logger;
-        }
+        _logger = loggerFactory.CreateLogger<DataChannelMessenger>();
 
-        DataChannelMessenger = new DataChannelMessenger(this, logger);
+        DataChannelMessenger = new DataChannelMessenger(this, _logger);
     }
 
     public async Task<Either<Error, Unit>> StartConnect(RTCConfiguration? pcConfig = null, RealtimeModelsEnum? model = null)

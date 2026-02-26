@@ -82,10 +82,9 @@ class Program
         var aliceConnectedSemaphore = new SemaphoreSlim(0, 1);
         var bobConnectedSemaphore = new SemaphoreSlim(0, 1);
 
-        var logger = loggerFactory.CreateLogger<Program>();
-        var aliceWebrtcEndPoint = new WebRTCEndPoint(openAiKey, logger);
+        var aliceWebrtcEndPoint = new WebRTCEndPoint(openAiKey, loggerFactory);
         aliceWebrtcEndPoint.OnPeerConnectionConnected += () => aliceConnectedSemaphore.Release();
-        var bobWebrtcEndPoint = new WebRTCEndPoint(openAiKey, logger);
+        var bobWebrtcEndPoint = new WebRTCEndPoint(openAiKey, loggerFactory);
         bobWebrtcEndPoint.OnPeerConnectionConnected += () => bobConnectedSemaphore.Release();
 
         // We'll listen in on the audio.

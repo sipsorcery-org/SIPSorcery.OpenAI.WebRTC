@@ -45,8 +45,8 @@ class Program
     static async Task Main()
     {
         Log.Logger = new LoggerConfiguration()
-            .MinimumLevel.Debug() 
-            //.MinimumLevel.Verbose()
+            //.MinimumLevel.Debug() 
+            .MinimumLevel.Verbose()
             .Enrich.FromLogContext()
             .WriteTo.Console()
             .CreateLogger();
@@ -66,7 +66,7 @@ class Program
 
         var logger = loggerFactory.CreateLogger<Program>();
 
-        var webrtcEndPoint = new WebRTCEndPoint(openAiKey, logger);
+        var webrtcEndPoint = new WebRTCEndPoint(openAiKey, loggerFactory);
 
         // Send/receive audio directly from Windows audio devices.
         var windowsAudioEp = InitialiseWindowsAudioEndPoint();
@@ -84,7 +84,7 @@ class Program
         {
             Log.Logger.Information("WebRTC peer connection established.");
 
-            var voice = RealtimeVoicesEnum.shimmer;
+            var voice = RealtimeVoicesEnum.marin;
 
             // Optionally send a session update message to adjust the session parameters.
             var sessionUpdateResult = webrtcEndPoint.DataChannelMessenger.SendSessionUpdate(

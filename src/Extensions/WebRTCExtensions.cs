@@ -44,6 +44,8 @@ public static class WebRTCServiceCollectionExtensions
             throw new ArgumentException("OpenAI API key must be provided", nameof(openAiKey));
         }
 
+        services.AddTransient<HttpLoggingHandler>();
+
         // Register the HTTP client for the REST client
         services
             .AddHttpClient(WebRTCRestClient.OPENAI_HTTP_CLIENT_NAME, client =>
@@ -51,7 +53,8 @@ public static class WebRTCServiceCollectionExtensions
                 client.Timeout = TimeSpan.FromSeconds(OPENAI_HTTP_CLIENT_TIMEOUT_SECONDS);
                 client.DefaultRequestHeaders.Authorization =
                     new AuthenticationHeaderValue("Bearer", openAiKey);
-            });
+            })
+            .AddHttpMessageHandler<HttpLoggingHandler>();
 
         // Register the REST and WebRTC clients
         services.AddTransient<IWebRTCRestClient, WebRTCRestClient>();

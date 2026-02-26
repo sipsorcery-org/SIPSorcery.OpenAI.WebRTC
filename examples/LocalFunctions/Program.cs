@@ -64,7 +64,7 @@ class Program
             return;
         }
 
-        var webrtcEndPoint = new WebRTCEndPoint(openAiKey, logger);
+        var webrtcEndPoint = new WebRTCEndPoint(openAiKey, loggerFactory);
 
         // We'll send/receive audio directly from our Windows audio devices.
         var windowsAudioEP = InitialiseWindowsAudioEndPoint();
